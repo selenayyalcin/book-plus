@@ -115,6 +115,35 @@ class MyApp extends StatelessWidget {
             ],
           ),
         ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.explore),
+              label: 'Discover',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search),
+              label: 'Search',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person),
+              label: 'My Profile',
+            ),
+          ],
+          currentIndex: 0,
+          selectedItemColor: const Color.fromRGBO(45, 115, 109, 1),
+          unselectedItemColor: Color.fromARGB(255, 126, 122, 122),
+          showUnselectedLabels: true,
+          onTap: (int index) {
+            // Burada her bir butona tıklandığında yapılacak işlemleri ekleyebilirsiniz
+            // Örnek: Farklı sayfalara yönlendirme gibi
+            print('Tapped on item $index');
+          },
+        ),
       ),
     );
   }
