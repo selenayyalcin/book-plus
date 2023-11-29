@@ -1,6 +1,7 @@
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/book_plus
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/data/icudtl.dat
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/lib/libflutter_linux_gtk.so
+/home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/data/flutter_assets/AssetManifest.json
 /home/selenay/Documents/GitHub/book-plus/build/linux/x64/debug/bundle/data/flutter_assets/FontManifest.json
