@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "594805785365",
+    "firebase_url": "https://bookplusfirebaseauth-default-rtdb.firebaseio.com",
+    "project_id": "bookplusfirebaseauth",
+    "storage_bucket": "bookplusfirebaseauth.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:594805785365:android:5b4c66aa05aeb84c425f1c",
+        "android_client_info": {
+          "package_name": "com.example.book_plus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz8YMnJFPpYiD9Oq8iWEsqTyl0LL9X1qk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:594805785365:android:ccfe9b39713122c9425f1c",
+        "android_client_info": {
+          "package_name": "com.example.flutter_auth"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAz8YMnJFPpYiD9Oq8iWEsqTyl0LL9X1qk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

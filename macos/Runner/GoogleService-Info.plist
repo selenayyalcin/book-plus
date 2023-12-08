@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyDOcFfZdZbSkzrQGI22mx9bb6pqYKcjPlU</string>
+	<key>GCM_SENDER_ID</key>
+	<string>594805785365</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.bookPlus.RunnerTests</string>
+	<key>PROJECT_ID</key>
+	<string>bookplusfirebaseauth</string>
+	<key>STORAGE_BUCKET</key>
+	<string>bookplusfirebaseauth.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:594805785365:ios:185bcb9d569d0d09425f1c</string>
+	<key>DATABASE_URL</key>
+	<string>https://bookplusfirebaseauth-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>
