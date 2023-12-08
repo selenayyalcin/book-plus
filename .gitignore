@@ -1,4 +1,6 @@
 *.iml
+.flutter-plugins
+.flutter-plugins-dependencies
 .vscode/
 .dart_tool/
 build/
