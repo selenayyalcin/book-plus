@@ -1,4 +1,4 @@
-#Wed Nov 29 16:32:07 TRT 2023
-base.0=/home/selenay/Documents/GitHub/book-plus/build/app/intermediates/dex/debug/mergeDexDebug/classes.dex
+#Fri Dec 08 16:36:04 TRT 2023
+base.0=C\:\\Users\\aleyn\\Desktop\\book-plus\\build\\app\\intermediates\\dex\\debug\\mergeDexDebug\\classes.dex
 path.0=classes.dex
 renamed.0=classes.dex
