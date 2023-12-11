@@ -10,10 +10,57 @@ class SearchPage extends StatelessWidget {
         title: const Text('Search'),
         backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {},
-          child: const Text('Search Page Content'),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+              ),
+              child: const Text(
+                'Search Books',
+                style: TextStyle(
+                    fontSize: 18, color: Color.fromRGBO(45, 115, 109, 1)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Recent Books',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color.fromRGBO(45, 115, 109, 1),
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: 6,
+              itemBuilder: (BuildContext context, int index) {
+                return Column(
+                  children: [
+                    Image.asset(
+                      'assets/images/book$index.jpg',
+                      width: 111,
+                      height: 148,
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
