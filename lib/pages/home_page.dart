@@ -114,7 +114,9 @@ class _HomePageState extends State<HomePage> {
                                       style: ElevatedButton.styleFrom(
                                           backgroundColor: const Color.fromRGBO(
                                               45, 115, 109, 1)),
-                                      child: const Text('DID YOU FINISH?'),
+                                      child: const Text('DID YOU FINISH?',
+                                          style:
+                                              TextStyle(color: Colors.white)),
                                     ),
                                   ],
                                 ),
