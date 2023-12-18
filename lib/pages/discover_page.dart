@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'book_detail_page.dart';
 
 class DiscoverPage extends StatelessWidget {
   const DiscoverPage({super.key});
@@ -28,7 +29,21 @@ class DiscoverPage extends StatelessWidget {
                 title: Text(book['title']),
                 subtitle: Text(book['author']),
                 onTap: () {
-                  // details
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BookDetailPage(
+                        author: book['author'],
+                        country: book['country'],
+                        imageLink: book['imageLink'],
+                        language: book['language'],
+                        link: book['link'],
+                        pages: book['pages'],
+                        title: book['title'],
+                        year: book['year'],
+                      ),
+                    ),
+                  );
                 },
               );
             },
