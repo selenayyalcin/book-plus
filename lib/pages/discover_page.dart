@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DiscoverPage extends StatelessWidget {
   const DiscoverPage({super.key});
@@ -10,11 +11,29 @@ class DiscoverPage extends StatelessWidget {
         title: const Text('Discover'),
         backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
       ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {},
-          child: const Text('Discover Page Content'),
-        ),
+      body: StreamBuilder(
+        stream: FirebaseFirestore.instance.collection('books').snapshots(),
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return ListView.builder(
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (BuildContext context, int index) {
+              DocumentSnapshot book = snapshot.data!.docs[index];
+              return ListTile(
+                leading: Image.asset(book['imageLink']),
+                title: Text(book['title']),
+                subtitle: Text(book['author']),
+                onTap: () {
+                  // details
+                },
+              );
+            },
+          );
+        },
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -42,7 +61,6 @@ class DiscoverPage extends StatelessWidget {
         onTap: (int index) {
           if (index == 0) {
             Navigator.pushNamed(context, '/');
-          } else if (index == 1) {
           } else if (index == 2) {
             Navigator.pushNamed(context, '/search');
           } else if (index == 3) {
