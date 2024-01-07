@@ -88,7 +88,7 @@ class SearchPage extends StatelessWidget {
         showUnselectedLabels: true,
         onTap: (int index) {
           if (index == 0) {
-            Navigator.pushNamed(context, '/');
+            Navigator.pushNamed(context, '/home');
           } else if (index == 1) {
             Navigator.pushNamed(context, '/discover');
           } else if (index == 2) {

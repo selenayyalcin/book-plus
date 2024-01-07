@@ -7,8 +7,11 @@ import 'package:fluttertoast/fluttertoast.dart';
 class AuthService {
   final userCollection = FirebaseFirestore.instance.collection("users");
   final firebaseAuth = FirebaseAuth.instance;
-  Future<void> signUp(BuildContext context,
-      {required String email, required String password}) async {
+  Future<void> signUp(
+    BuildContext context, {
+    required String email,
+    required String password,
+  }) async {
     final navigator = Navigator.of(context);
     try {
       final UserCredential userCredential = await firebaseAuth
@@ -44,6 +47,10 @@ class AuthService {
 
   Future<void> _registerUser(
       {required String email, required String password}) async {
-    await userCollection.doc().set({"email": email, "password": password});
+    await userCollection.doc().set({
+      "username": email.split('@')[0],
+      "password": password,
+      "bio": 'Empty bio..'
+    });
   }
 }

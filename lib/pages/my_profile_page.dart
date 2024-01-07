@@ -1,7 +1,69 @@
+import 'package:book_plus/components/text_box.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class MyProfilePage extends StatelessWidget {
+class MyProfilePage extends StatefulWidget {
   const MyProfilePage({super.key});
+
+  @override
+  State<MyProfilePage> createState() => _MyProfilePageState();
+}
+
+class _MyProfilePageState extends State<MyProfilePage> {
+  //user
+  final currentUser = FirebaseAuth.instance.currentUser!;
+  final usersCollection = FirebaseFirestore.instance.collection('users');
+
+  //edit field
+  Future<void> editField(String field) async {
+    String newValue = "";
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
+        title: Text(
+          "Edit $field",
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: TextField(
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Enter new $field",
+            hintStyle: TextStyle(color: Colors.grey[100]),
+          ),
+          onChanged: (value) {
+            newValue = value;
+          },
+        ),
+        actions: [
+          // cancel button
+          TextButton(
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          //save button
+          TextButton(
+            child: const Text(
+              'Save',
+              style: TextStyle(color: Colors.white),
+            ),
+            onPressed: () => Navigator.of(context).pop(newValue),
+          ),
+        ],
+      ),
+    );
+
+    //update in firestore
+    if (newValue.trim().isNotEmpty) {
+      //only uppdate if there is something in the text
+      await usersCollection.doc(currentUser.email).update({field: newValue});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,97 +71,112 @@ class MyProfilePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Profile'),
         backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit),
-          ),
-        ],
+        actions: [],
       ),
-      body: const SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundImage:
-                    AssetImage('assets/images/profile_picture.jpg'),
-              ),
-              SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
-                    children: [
-                      Text(
-                        'Followers',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      Text(
-                        '220',
-                        style: TextStyle(fontSize: 24),
-                      ),
-                    ],
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection("users")
+            .doc(currentUser.email)
+            .snapshots(),
+        builder: (context, snapshot) {
+          //get user data
+          if (snapshot.hasData) {
+            // final userData = snapshot.data!.data() as Map<String, dynamic>?;
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 40),
+                //profile pic
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: AspectRatio(
+                    aspectRatio: 2,
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage('assets/images/profile.jpg'),
+                    ),
                   ),
-                  Column(
-                    children: [
-                      Text(
-                        'Following',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      Text(
-                        '50',
-                        style: TextStyle(fontSize: 24),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-              Text(
-                'Books I Have Read',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(45, 115, 109, 1),
                 ),
-              ),
-              SizedBox(height: 8),
-              Column(
-                children: [
-                  ListTile(
-                    title: Text('Midnight Library, Matt Haig'),
-                    subtitle: Text('Comment: Great!'),
+
+                //user email
+                Text(
+                  currentUser.email!,
+                  textAlign: TextAlign.center,
+                  style:
+                      const TextStyle(color: Color.fromARGB(255, 24, 24, 24)),
+                ),
+                const SizedBox(height: 50),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          'Followers',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        Text(
+                          '0',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          'Following',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                        Text(
+                          '0',
+                          style: TextStyle(fontSize: 24),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                //user details
+                Padding(
+                  padding: const EdgeInsets.only(left: 25.0),
+                  child: Text(
+                    'My Details',
+                    style: TextStyle(color: Colors.grey[600]),
                   ),
-                  ListTile(
-                    title: Text('Franny and Zooey, J.D. Salinger'),
-                    subtitle: Text('Comment: Meaningful and nice fiction.'),
-                  ),
-                  ListTile(
-                    title: Text('The Survivors, Alex Schulman'),
-                    subtitle: Text('Comment: Loved this book!'),
-                  ),
-                  ListTile(
-                    title: Text('Man\'s Search For Meaning, Viktor E. Frankl'),
-                    subtitle: Text(
-                        'Comment: Everyone should read this book at least once in their life time.'),
-                  ),
-                  ListTile(
-                    title: Text('The Trial, Franz Kafka'),
-                    subtitle: Text(
-                        'Comment: In love with every book of Franz Kafka.'),
-                  ),
-                  ListTile(
-                    title: Text('America, Franz Kafka'),
-                    subtitle: Text(
-                        'Comment: I have read this book in one day. It tells a lot of things about capitalism and the new world design. I think people can understand a lot things from this book.'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+                ),
+
+                //username
+                MyTextBox(
+                  text: currentUser.email!,
+                  sectionName: 'username',
+                  onPressed: () => editField('username'),
+                ),
+
+                //bio
+                MyTextBox(
+                  text: 'empty bio',
+                  sectionName: 'bio',
+                  onPressed: () => editField('bio'),
+                ),
+                const SizedBox(height: 50),
+
+                // //user posts
+                // Padding(
+                //   padding: const EdgeInsets.only(left: 25.0),
+                //   child: Text(
+                //     'My Posts',
+                //     style: TextStyle(color: Colors.grey[600]),
+                //   ),
+                // ),
+              ],
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error${snapshot.error}'));
+          }
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        },
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -126,7 +203,7 @@ class MyProfilePage extends StatelessWidget {
         showUnselectedLabels: true,
         onTap: (int index) {
           if (index == 0) {
-            Navigator.pushNamed(context, '/');
+            Navigator.pushNamed(context, '/home');
           } else if (index == 1) {
             Navigator.pushNamed(context, '/discover');
           } else if (index == 2) {

@@ -75,7 +75,7 @@ class DiscoverPage extends StatelessWidget {
         showUnselectedLabels: true,
         onTap: (int index) {
           if (index == 0) {
-            Navigator.pushNamed(context, '/');
+            Navigator.pushNamed(context, '/home');
           } else if (index == 2) {
             Navigator.pushNamed(context, '/search');
           } else if (index == 3) {

@@ -13,13 +13,15 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: const WelcomeScreen(),
       routes: {
+        '/welcome': (context) => const WelcomeScreen(),
         '/discover': (context) => const DiscoverPage(),
         '/search': (context) => const SearchPage(),
         '/profile': (context) => const MyProfilePage(),
