@@ -1,7 +1,57 @@
+import 'package:book_plus/pages/book_detail_page.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class SearchPage extends StatelessWidget {
+class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _SearchPageState createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPage> {
+  late TextEditingController _searchController;
+  late List<QueryDocumentSnapshot> searchedBooks;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    searchedBooks = [];
+  }
+
+  Future<void> searchBooks(String searchTerm) async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('books')
+        .where('title', isEqualTo: searchTerm)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      QueryDocumentSnapshot firstBook = querySnapshot.docs.first;
+      // ignore: use_build_context_synchronously
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => BookDetailPage(
+            author: firstBook['author'],
+            country: firstBook['country'],
+            imageLink: firstBook['imageLink'],
+            language: firstBook['language'],
+            link: firstBook['link'],
+            pages: firstBook['pages'],
+            title: firstBook['title'],
+            year: firstBook['year'],
+          ),
+        ),
+      );
+    } else {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aranan kitap bulunamadı')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,21 +65,39 @@ class SearchPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-              ),
-              child: const Text(
-                'Search Books',
-                style: TextStyle(
-                    fontSize: 18, color: Color.fromRGBO(45, 115, 109, 1)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Kitap İsmi',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    searchBooks(_searchController.text);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(120, 50),
+                    backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+                  ),
+                  child: const Text(
+                    'Ara',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Color.fromRGBO(45, 115, 109, 1),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             const Text(
-              'Recent Books',
+              'Son Aranan Kitaplar',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -37,28 +105,26 @@ class SearchPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: 6,
-              itemBuilder: (BuildContext context, int index) {
-                return Column(
-                  children: [
-                    Image.asset(
-                      'assets/images/book$index.jpg',
-                      width: 111,
-                      height: 148,
-                      fit: BoxFit.cover,
+            Expanded(
+              //height: 300,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: searchedBooks.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Column(
+                      children: [
+                        Image.asset(
+                          searchedBooks[index]['imageLink'],
+                          fit: BoxFit.contain,
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -91,7 +157,6 @@ class SearchPage extends StatelessWidget {
             Navigator.pushNamed(context, '/home');
           } else if (index == 1) {
             Navigator.pushNamed(context, '/discover');
-          } else if (index == 2) {
           } else if (index == 3) {
             Navigator.pushNamed(context, '/profile');
           }
