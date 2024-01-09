@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  const SearchPage({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _SearchPageState createState() => _SearchPageState();
 }
 
@@ -29,7 +28,6 @@ class _SearchPageState extends State<SearchPage> {
 
     if (querySnapshot.docs.isNotEmpty) {
       QueryDocumentSnapshot firstBook = querySnapshot.docs.first;
-      // ignore: use_build_context_synchronously
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -45,8 +43,17 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ),
       );
+
+      // Son aranan kitapları güncelle
+      if (!searchedBooks.contains(firstBook)) {
+        setState(() {
+          if (searchedBooks.length >= 10) {
+            searchedBooks.removeAt(0);
+          }
+          searchedBooks.add(firstBook);
+        });
+      }
     } else {
-      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aranan kitap bulunamadı')),
       );
@@ -106,18 +113,23 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
             Expanded(
-              //height: 300,
               child: ListView.builder(
+                shrinkWrap: true,
                 scrollDirection: Axis.horizontal,
                 itemCount: searchedBooks.length,
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.all(4.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.asset(
-                          searchedBooks[index]['imageLink'],
-                          fit: BoxFit.contain,
+                        SizedBox(
+                          height: 250,
+                          width: 150,
+                          child: Image.asset(
+                            searchedBooks[index]['imageLink'],
+                            fit: BoxFit.cover,
+                          ),
                         ),
                         const SizedBox(height: 8),
                       ],
