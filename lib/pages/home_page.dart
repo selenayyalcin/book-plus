@@ -1,3 +1,4 @@
+import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/components/wall_post.dart';
 import 'package:book_plus/helper/helper_methods.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,23 +37,6 @@ class _HomePageState extends State<HomePage> {
   //clear the textfield
   void clearInput() {
     textController.clear();
-  }
-
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (index == 0) {
-      Navigator.pushNamed(context, '/');
-    } else if (index == 1) {
-      Navigator.pushNamed(context, '/discover');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/search');
-    } else if (index == 3) {
-      Navigator.pushNamed(context, '/profile');
-    }
   }
 
   void signOut() {
@@ -155,31 +139,7 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       )),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'My Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color.fromRGBO(45, 115, 109, 1),
-        unselectedItemColor: const Color.fromARGB(255, 126, 122, 122),
-        showUnselectedLabels: true,
-        onTap: _onItemTapped,
-      ),
+      bottomNavigationBar: const BottomNavigationBarController(initialIndex: 0),
     );
   }
 }

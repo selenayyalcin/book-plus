@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'book_detail_page.dart';
+import 'package:book_plus/bottom_navigation_bar_controller.dart';
 
 class DiscoverPage extends StatelessWidget {
   const DiscoverPage({super.key});
@@ -50,39 +51,7 @@ class DiscoverPage extends StatelessWidget {
           );
         },
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore),
-            label: 'Discover',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'My Profile',
-          ),
-        ],
-        currentIndex: 1,
-        selectedItemColor: const Color.fromRGBO(45, 115, 109, 1),
-        unselectedItemColor: const Color.fromARGB(255, 126, 122, 122),
-        showUnselectedLabels: true,
-        onTap: (int index) {
-          if (index == 0) {
-            Navigator.pushNamed(context, '/home');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/search');
-          } else if (index == 3) {
-            Navigator.pushNamed(context, '/profile');
-          }
-        },
-      ),
+      bottomNavigationBar: const BottomNavigationBarController(initialIndex: 1),
     );
   }
 }
