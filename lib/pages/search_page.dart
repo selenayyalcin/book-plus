@@ -30,6 +30,7 @@ class _SearchPageState extends State<SearchPage> {
 
     if (querySnapshot.docs.isNotEmpty) {
       QueryDocumentSnapshot firstBook = querySnapshot.docs.first;
+      // ignore: use_build_context_synchronously
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -57,7 +58,7 @@ class _SearchPageState extends State<SearchPage> {
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aranan kitap bulunamadı')),
+        const SnackBar(content: Text('Book you are looking for havent found.')),
       );
     }
   }
@@ -74,11 +75,11 @@ class _SearchPageState extends State<SearchPage> {
       myBooks.add(bookSnapshot.id);
       await userRef.update({'myBooks': myBooks});
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kitap listene eklendi')),
+        const SnackBar(content: Text('Book added to your list.')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kitap zaten listenizde bulunuyor')),
+        const SnackBar(content: Text('Book is already in your list.')),
       );
     }
   }
@@ -101,7 +102,7 @@ class _SearchPageState extends State<SearchPage> {
                   child: TextField(
                     controller: _searchController,
                     decoration: const InputDecoration(
-                      hintText: 'Kitap İsmi',
+                      hintText: 'What do you want to search?',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -116,7 +117,7 @@ class _SearchPageState extends State<SearchPage> {
                     backgroundColor: const Color.fromARGB(255, 243, 243, 243),
                   ),
                   child: const Text(
-                    'Ara',
+                    'Search',
                     style: TextStyle(
                       fontSize: 18,
                       color: Color.fromRGBO(45, 115, 109, 1),
@@ -127,7 +128,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Son Aranan Kitaplar',
+              'Recently Searched Book',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
