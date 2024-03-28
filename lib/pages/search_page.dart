@@ -1,6 +1,8 @@
+// search_page.dart
 import 'package:book_plus/pages/book_detail_page.dart';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -56,6 +58,27 @@ class _SearchPageState extends State<SearchPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aranan kitap bulunamadı')),
+      );
+    }
+  }
+
+  Future<void> addToMyBooks(QueryDocumentSnapshot bookSnapshot) async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser!.email;
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(currentUserEmail);
+
+    final userDoc = await userRef.get();
+    List<dynamic> myBooks = userDoc['myBooks'] ?? [];
+
+    if (!myBooks.contains(bookSnapshot.id)) {
+      myBooks.add(bookSnapshot.id);
+      await userRef.update({'myBooks': myBooks});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kitap listene eklendi')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kitap zaten listenizde bulunuyor')),
       );
     }
   }
@@ -132,6 +155,12 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            addToMyBooks(searchedBooks[index]);
+                          },
+                          child: const Text('Add to My List'),
+                        ),
                       ],
                     ),
                   );
