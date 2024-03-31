@@ -1,10 +1,10 @@
-import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:book_plus/pages/book_detail_page.dart';
 import 'package:path/path.dart' as Path;
 import 'package:book_plus/database_helper.dart';
+import 'package:book_plus/bottom_navigation_bar_controller.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -83,27 +83,30 @@ class _SearchPageState extends State<SearchPage> {
       }
     } else {
       QueryDocumentSnapshot firstBook = querySnapshot.docs.first;
+      String title = firstBook['title'];
 
-      setState(() {
-        searchedBooks
-            .removeWhere((book) => book['title'] == firstBook['title']);
-        searchedBooks.insert(0, {
-          'title': firstBook['title'],
+      bool isBookInRecent = searchedBooks.any((book) => book['title'] == title);
+
+      if (!isBookInRecent) {
+        setState(() {
+          searchedBooks.insert(0, {
+            'title': title,
+            'author': firstBook['author'],
+            'imageLink': firstBook['imageLink'],
+          });
+        });
+
+        await DatabaseHelper.instance.insertBook({
+          'title': title,
           'author': firstBook['author'],
           'imageLink': firstBook['imageLink'],
         });
-      });
 
-      await DatabaseHelper.instance.insertBook({
-        'title': firstBook['title'],
-        'author': firstBook['author'],
-        'imageLink': firstBook['imageLink'],
-      });
-
-      _loadRecentBooks();
+        _loadRecentBooks();
+      }
 
       Navigator.push(
-        context as BuildContext,
+        context,
         MaterialPageRoute(
           builder: (context) => BookDetailPage(
             author: firstBook['author'],
@@ -144,7 +147,9 @@ class _SearchPageState extends State<SearchPage> {
                     controller: _searchController,
                     decoration: const InputDecoration(
                       hintText: 'What do you want to search?',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(30.0))),
                     ),
                   ),
                 ),
@@ -168,52 +173,100 @@ class _SearchPageState extends State<SearchPage> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recently Searched Books',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromRGBO(45, 115, 109, 1),
-                  ),
-                ),
-                TextButton(
-                  onPressed: clearHistory,
-                  child: const Text('Clear History'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                shrinkWrap: true,
-                scrollDirection: Axis.horizontal,
-                itemCount: searchedBooks.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: 250,
-                          width: 150,
-                          child: Image.asset(
-                            searchedBooks[index]['imageLink'],
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Text('Add to My List'),
-                        ),
-                      ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Recently Searched Books',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(45, 115, 109, 1),
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(
+                    height: 8,
+                  ),
+                  SizedBox(
+                    height: 250,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: searchedBooks.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                height: 200,
+                                width: 150,
+                                child: Image.asset(
+                                  searchedBooks[index]['imageLink'],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Text(searchedBooks[index]['title']),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'English Books',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(45, 115, 109, 1),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 250,
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('books')
+                          .where('language', isEqualTo: 'English')
+                          .snapshots(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            DocumentSnapshot book = snapshot.data!.docs[index];
+                            return Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 200,
+                                    width: 150,
+                                    child: Image.asset(
+                                      book['imageLink'],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Text(book['title']),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
