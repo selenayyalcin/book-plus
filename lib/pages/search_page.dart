@@ -177,13 +177,26 @@ class _SearchPageState extends State<SearchPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Recently Searched Books',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromRGBO(45, 115, 109, 1),
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Recently Searched Books',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(45, 115, 109, 1),
+                        ),
+                      ),
+                      const SizedBox(width: 35),
+                      TextButton(
+                        onPressed: clearHistory,
+                        child: const Text(
+                          'Clear History',
+                          style:
+                              TextStyle(color: Color.fromRGBO(45, 115, 109, 1)),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(
                     height: 8,
@@ -257,7 +270,9 @@ class _SearchPageState extends State<SearchPage> {
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                  Text(book['title']),
+                                  Text(
+                                    book['title'],
+                                  ),
                                 ],
                               ),
                             );
