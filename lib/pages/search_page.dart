@@ -7,7 +7,7 @@ import 'package:book_plus/database_helper.dart';
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({Key? key});
+  const SearchPage({Key? key}) : super(key: key);
 
   @override
   _SearchPageState createState() => _SearchPageState();
@@ -53,19 +53,20 @@ class _SearchPageState extends State<SearchPage> {
         QueryDocumentSnapshot firstBook = foundBooks.first;
 
         Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BookDetailPage(
-                author: firstBook['author'],
-                country: firstBook['country'],
-                imageLink: firstBook['imageLink'],
-                language: firstBook['language'],
-                link: firstBook['link'],
-                pages: firstBook['pages'],
-                title: firstBook['title'],
-                year: firstBook['year'],
-              ),
-            ));
+          context,
+          MaterialPageRoute(
+            builder: (context) => BookDetailPage(
+              author: firstBook['author'],
+              country: firstBook['country'],
+              imageLink: firstBook['imageLink'],
+              language: firstBook['language'],
+              link: firstBook['link'],
+              pages: firstBook['pages'],
+              title: firstBook['title'],
+              year: firstBook['year'],
+            ),
+          ),
+        );
 
         await DatabaseHelper.instance.insertBook({
           'title': firstBook['title'],
@@ -137,236 +138,258 @@ class _SearchPageState extends State<SearchPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'What do you want to search?',
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(30.0))),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'What do you want to search?',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(30.0)),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      searchBooks(_searchController.text);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(120, 50),
-                      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-                    ),
-                    child: const Text(
-                      'Search',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Color.fromRGBO(45, 115, 109, 1),
-                      ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    searchBooks(_searchController.text);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(120, 50),
+                    backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+                  ),
+                  child: const Text(
+                    'Search',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Color.fromRGBO(45, 115, 109, 1),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'Recently Searched Books',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromRGBO(45, 115, 109, 1),
+                            ),
+                          ),
+                          const SizedBox(width: 35),
+                          TextButton(
+                            onPressed: clearHistory,
+                            child: const Text(
+                              'Clear History',
+                              style: TextStyle(
+                                color: Color.fromRGBO(45, 115, 109, 1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      SizedBox(
+                        height: 250,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: searchedBooks.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 200,
+                                    width: 150,
+                                    child: Image.asset(
+                                      searchedBooks[index]['imageLink'],
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Text(searchedBooks[index]['title']),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       const Text(
-                        'Recently Searched Books',
+                        'English Books',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Color.fromRGBO(45, 115, 109, 1),
                         ),
                       ),
-                      TextButton(
-                        onPressed: clearHistory,
-                        child: const Text(
-                          'Clear History',
-                          style:
-                              TextStyle(color: Color.fromRGBO(45, 115, 109, 1)),
+                      SizedBox(
+                        height: 250,
+                        child: StreamBuilder(
+                          stream: FirebaseFirestore.instance
+                              .collection('books')
+                              .where('language', isEqualTo: 'English')
+                              .snapshots(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<QuerySnapshot> snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              scrollDirection: Axis.horizontal,
+                              itemCount: snapshot.data!.docs.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                DocumentSnapshot book =
+                                    snapshot.data!.docs[index];
+                                return Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => BookDetailPage(
+                                            author: book['author'],
+                                            country: book['country'],
+                                            imageLink: book['imageLink'],
+                                            language: book['language'],
+                                            link: book['link'],
+                                            pages: book['pages'],
+                                            title: book['title'],
+                                            year: book['year'],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          height: 200,
+                                          width: 150,
+                                          child: Image.asset(
+                                            book['imageLink'],
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Text(
+                                          book['title'],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Old Books',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(45, 115, 109, 1),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 250,
+                        child: StreamBuilder(
+                          stream: FirebaseFirestore.instance
+                              .collection('books')
+                              .where('year', isLessThan: 1900)
+                              .snapshots(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<QuerySnapshot> snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              scrollDirection: Axis.horizontal,
+                              itemCount: snapshot.data!.docs.length,
+                              itemBuilder: (BuildContext context, int index) {
+                                DocumentSnapshot book =
+                                    snapshot.data!.docs[index];
+                                return Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => BookDetailPage(
+                                            author: book['author'],
+                                            country: book['country'],
+                                            imageLink: book['imageLink'],
+                                            language: book['language'],
+                                            link: book['link'],
+                                            pages: book['pages'],
+                                            title: book['title'],
+                                            year: book['year'],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        SizedBox(
+                                          height: 200,
+                                          width: 150,
+                                          child: Image.asset(
+                                            book['imageLink'],
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Text(
+                                          book['title'],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  SizedBox(
-                    height: 250,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      scrollDirection: Axis.horizontal,
-                      itemCount: searchedBooks.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                height: 200,
-                                width: 150,
-                                child: Image.asset(
-                                  searchedBooks[index]['imageLink'],
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Expanded(
-                                child: Text(
-                                  searchedBooks[index]['title'],
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 14),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'English Books',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromRGBO(45, 115, 109, 1),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 250,
-                    child: StreamBuilder(
-                      stream: FirebaseFirestore.instance
-                          .collection('books')
-                          .where('language', isEqualTo: 'English')
-                          .snapshots(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<QuerySnapshot> snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          scrollDirection: Axis.horizontal,
-                          itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            DocumentSnapshot book = snapshot.data!.docs[index];
-                            return Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 200,
-                                    width: 150,
-                                    child: Image.asset(
-                                      book['imageLink'],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Expanded(
-                                    child: Text(
-                                      book['title'],
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Old Books',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color.fromRGBO(45, 115, 109, 1),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 250,
-                    child: StreamBuilder(
-                      stream: FirebaseFirestore.instance
-                          .collection('books')
-                          .where('year', isLessThan: 1900)
-                          .snapshots(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<QuerySnapshot> snapshot) {
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          scrollDirection: Axis.horizontal,
-                          itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            DocumentSnapshot book = snapshot.data!.docs[index];
-                            return Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 200,
-                                    width: 150,
-                                    child: Image.asset(
-                                      book['imageLink'],
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 8,
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      book['title'],
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: const BottomNavigationBarController(initialIndex: 2),
     );
   }
 }
-
-
-
-// TODO: fix duplicate book problem in recently searched
+//TODO: fix duplicate book problem
