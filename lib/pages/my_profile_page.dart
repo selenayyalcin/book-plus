@@ -1,71 +1,21 @@
-import 'package:book_plus/components/text_box.dart';
+import 'package:book_plus/pages/update_profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
+import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
-  const MyProfilePage({super.key});
+  const MyProfilePage({Key? key}) : super(key: key);
 
   @override
-  State<MyProfilePage> createState() => _MyProfilePageState();
+  _MyProfilePageState createState() => _MyProfilePageState();
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
   //user
   final currentUser = FirebaseAuth.instance.currentUser!;
   final usersCollection = FirebaseFirestore.instance.collection('users');
-
-  //edit field
-  Future<void> editField(String field) async {
-    String newValue = "";
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
-        title: Text(
-          "Edit $field",
-          style: const TextStyle(color: Colors.white),
-        ),
-        content: TextField(
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: "Enter new $field",
-            hintStyle: TextStyle(color: Colors.grey[100]),
-          ),
-          onChanged: (value) {
-            newValue = value;
-          },
-        ),
-        actions: [
-          // cancel button
-          TextButton(
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          //save button
-          TextButton(
-            child: const Text(
-              'Save',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () => Navigator.of(context).pop(newValue),
-          ),
-        ],
-      ),
-    );
-
-    //update in firestore
-    if (newValue.trim().isNotEmpty) {
-      //only uppdate if there is something in the text
-      await usersCollection.doc(currentUser.email).update({field: newValue});
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,103 +30,95 @@ class _MyProfilePageState extends State<MyProfilePage> {
             .doc(currentUser.email)
             .snapshots(),
         builder: (context, snapshot) {
-          //get user data
           if (snapshot.hasData) {
             // final userData = snapshot.data!.data() as Map<String, dynamic>?;
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 40),
-                //profile pic
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: AspectRatio(
-                    aspectRatio: 2,
-                    child: CircleAvatar(
-                      backgroundImage: AssetImage('assets/images/profile.jpg'),
-                    ),
-                  ),
-                ),
-
-                //user email
-                Text(
-                  currentUser.email!,
-                  textAlign: TextAlign.center,
-                  style:
-                      const TextStyle(color: Color.fromARGB(255, 24, 24, 24)),
-                ),
-                const SizedBox(height: 50),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+            return SingleChildScrollView(
+              child: Container(
+                margin: EdgeInsets.only(top: 50),
+                padding: const EdgeInsets.symmetric(horizontal: 130),
+                child: Column(
                   children: [
-                    Column(
+                    Stack(
                       children: [
-                        Text(
-                          'Followers',
-                          style: TextStyle(fontSize: 18),
+                        SizedBox(
+                          width: 120,
+                          height: 120,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: Image(
+                              image: AssetImage(
+                                'assets/images/profile.jpg',
+                              ),
+                            ),
+                          ),
                         ),
-                        Text(
-                          '0',
-                          style: TextStyle(fontSize: 24),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 35,
+                            height: 35,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(100),
+                              color: Color.fromARGB(255, 149, 180, 178),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UpdateProfileScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                LineAwesomeIcons.alternate_pencil,
+                                color: Color.fromARGB(255, 75, 74, 74),
+                                size: 20,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    Column(
-                      children: [
-                        Text(
-                          'Following',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          '0',
-                          style: TextStyle(fontSize: 24),
-                        ),
-                      ],
+                    const SizedBox(height: 10),
+                    Text(
+                      'Loading...',
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
+                    Text(
+                      currentUser.email!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: 200,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color.fromARGB(255, 158, 213, 209),
+                          side: BorderSide.none,
+                          shape: StadiumBorder(),
+                        ),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UpdateProfileScreen(),
+                          ),
+                        ),
+                        child: const Text('Edit Profile'),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const Divider(),
+                    const SizedBox(height: 30),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                //user details
-                Padding(
-                  padding: const EdgeInsets.only(left: 25.0),
-                  child: Text(
-                    'My Details',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ),
-
-                //username
-                MyTextBox(
-                  text: currentUser.email!,
-                  sectionName: 'username',
-                  onPressed: () => editField('username'),
-                ),
-
-                //bio
-                MyTextBox(
-                  text: 'empty bio',
-                  sectionName: 'bio',
-                  onPressed: () => editField('bio'),
-                ),
-                const SizedBox(height: 50),
-
-                // //user posts
-                // Padding(
-                //   padding: const EdgeInsets.only(left: 25.0),
-                //   child: Text(
-                //     'My Posts',
-                //     style: TextStyle(color: Colors.grey[600]),
-                //   ),
-                // ),
-              ],
+              ),
             );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error${snapshot.error}'));
+          } else {
+            // Eğer veri yoksa, bir CircularProgressIndicator döndür
+            return Center(child: CircularProgressIndicator());
           }
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
         },
       ),
       bottomNavigationBar: const BottomNavigationBarController(initialIndex: 3),

@@ -1,3 +1,4 @@
+import 'package:book_plus/pages/update_profile_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';

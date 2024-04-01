@@ -56,7 +56,10 @@ class SignUpFormState extends State<SignUpForm> {
             onPressed: () {
               String email = _emailController.text;
               String password = _passwordController.text;
-              AuthService().signUp(context, email: email, password: password);
+              AuthService().signUp(context,
+                  email: email,
+                  password: password,
+                  username: email.split('@')[0]);
             },
             child: Text("Sign Up".toUpperCase()),
           ),
