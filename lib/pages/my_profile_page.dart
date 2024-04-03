@@ -38,8 +38,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
             return SingleChildScrollView(
               child: Container(
                 margin: EdgeInsets.only(top: 50),
-                padding: const EdgeInsets.symmetric(horizontal: 130),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Stack(
                       children: [
@@ -114,6 +115,18 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     const SizedBox(height: 30),
                     const Divider(),
                     const SizedBox(height: 30),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildBookList('read_books', 'Books I Read'),
+                          const SizedBox(height: 10),
+                          _buildBookList(
+                              'want_to_read_books', 'Books I Want to Read'),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -124,6 +137,72 @@ class _MyProfilePageState extends State<MyProfilePage> {
         },
       ),
       bottomNavigationBar: const BottomNavigationBarController(initialIndex: 3),
+    );
+  }
+
+  Widget _buildBookList(String collectionName, String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color.fromRGBO(45, 115, 109, 1),
+            ),
+          ),
+        ),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection("users")
+              .doc(currentUser.uid)
+              .collection(collectionName)
+              .snapshots(),
+          builder:
+              (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+            if (snapshot.hasError) {
+              return Text('Something went wrong');
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator();
+            }
+
+            return SizedBox(
+              height: 170,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: snapshot.data!.docs.map((DocumentSnapshot document) {
+                  Map<String, dynamic> data =
+                      document.data() as Map<String, dynamic>;
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      width: 100,
+                      color: Colors.grey[200],
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 100,
+                            height: 150,
+                            child: Image.asset(
+                              data['imageLink'],
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
