@@ -5,12 +5,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
-class UpdateProfileScreen extends StatelessWidget {
+class UpdateProfileScreen extends StatefulWidget {
   const UpdateProfileScreen({Key? key}) : super(key: key);
+
+  @override
+  _UpdateProfileScreenState createState() => _UpdateProfileScreenState();
+}
+
+class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -63,15 +74,24 @@ class UpdateProfileScreen extends StatelessWidget {
                     .doc(currentUser!.uid)
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data!.exists) {
-                    return CircularProgressIndicator();
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return Center(child: CircularProgressIndicator());
                   }
 
+                  final userData =
+                      snapshot.data!.data() as Map<String, dynamic>;
+                  final String username = userData['username'];
+                  final String email = userData['email'];
+
+                  _usernameController.text = username;
+                  _emailController.text = email;
+
                   return Form(
+                    key: _formKey,
                     child: Column(
                       children: [
                         TextFormField(
-                          // initialValue: 'Full Name',
+                          controller: _usernameController,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
@@ -86,13 +106,13 @@ class UpdateProfileScreen extends StatelessWidget {
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
-                            label: Text('Full Name'),
+                            labelText: 'Full Name',
                             prefixIcon: Icon(LineAwesomeIcons.user),
                           ),
                         ),
                         const SizedBox(height: 30),
                         TextFormField(
-                          initialValue: currentUser.email,
+                          controller: _emailController,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
@@ -107,12 +127,14 @@ class UpdateProfileScreen extends StatelessWidget {
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
-                            label: Text('E-mail'),
+                            labelText: 'E-mail',
                             prefixIcon: Icon(LineAwesomeIcons.envelope_1),
                           ),
                         ),
                         const SizedBox(height: 30),
                         TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
@@ -127,7 +149,7 @@ class UpdateProfileScreen extends StatelessWidget {
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
-                            label: Text('Password'),
+                            labelText: 'Password',
                             prefixIcon: Icon(LineAwesomeIcons.fingerprint),
                           ),
                         ),
@@ -135,12 +157,9 @@ class UpdateProfileScreen extends StatelessWidget {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MyProfilePage(),
-                              ),
-                            ),
+                            onPressed: () {
+                              _updateProfile(context);
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
                                   Color.fromARGB(255, 185, 214, 212),
@@ -164,5 +183,61 @@ class UpdateProfileScreen extends StatelessWidget {
       ),
       bottomNavigationBar: const BottomNavigationBarController(initialIndex: 3),
     );
+  }
+
+  void _updateProfile(BuildContext context) async {
+    final String newUsername = _usernameController.text.trim();
+    final String newEmail = _emailController.text.trim();
+    final String newPassword = _passwordController.text.trim();
+
+    if (newUsername.isNotEmpty && newEmail.isNotEmpty) {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      try {
+        // Update user's email if it has changed
+        if (newEmail != currentUser!.email) {
+          await currentUser.updateEmail(newEmail);
+        }
+
+        // Update user's password if it has changed
+        if (newPassword.isNotEmpty) {
+          await currentUser.updatePassword(newPassword);
+        }
+
+        // Update user's display name (username)
+        await currentUser.updateProfile(displayName: newUsername);
+
+        // Update user's data in Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .update({
+          'username': newUsername,
+          'email': newEmail,
+        });
+
+        // Show success message and navigate back to profile page
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profile updated successfully.'),
+          ),
+        );
+        Navigator.pop(context); // Go back to the previous screen
+      } catch (e) {
+        // Show error message if something goes wrong
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: $e'),
+          ),
+        );
+      }
+    } else {
+      // Show error message if username or email is empty
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Username and email cannot be empty.'),
+        ),
+      );
+    }
   }
 }

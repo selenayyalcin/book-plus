@@ -14,13 +14,29 @@ class SignUpForm extends StatefulWidget {
 }
 
 class SignUpFormState extends State<SignUpForm> {
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Form(
       child: Column(
         children: [
+          TextFormField(
+            controller: _usernameController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.next,
+            cursorColor: kPrimaryColor,
+            decoration: const InputDecoration(
+              hintText: "Your username",
+              prefixIcon: Padding(
+                padding: EdgeInsets.all(defaultPadding),
+                child: Icon(Icons.person),
+              ),
+            ),
+          ),
+          SizedBox(height: defaultPadding / 2),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -31,7 +47,7 @@ class SignUpFormState extends State<SignUpForm> {
               hintText: "Your email",
               prefixIcon: Padding(
                 padding: EdgeInsets.all(defaultPadding),
-                child: Icon(Icons.person),
+                child: Icon(Icons.email),
               ),
             ),
           ),
@@ -54,12 +70,11 @@ class SignUpFormState extends State<SignUpForm> {
           const SizedBox(height: defaultPadding / 2),
           ElevatedButton(
             onPressed: () {
+              String username = _usernameController.text;
               String email = _emailController.text;
               String password = _passwordController.text;
               AuthService().signUp(context,
-                  email: email,
-                  password: password,
-                  username: email.split('@')[0]);
+                  email: email, password: password, username: username);
             },
             child: Text("Sign Up".toUpperCase()),
           ),

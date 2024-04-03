@@ -13,9 +13,9 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
-  //user
   final currentUser = FirebaseAuth.instance.currentUser!;
   final usersCollection = FirebaseFirestore.instance.collection('users');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -27,11 +27,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection("users")
-            .doc(currentUser.email)
+            .doc(currentUser.uid)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            // final userData = snapshot.data!.data() as Map<String, dynamic>?;
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final String username = userData['username'];
+            final String email = userData['email'];
+
             return SingleChildScrollView(
               child: Container(
                 margin: EdgeInsets.only(top: 50),
@@ -83,11 +86,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Loading...',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                      username,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     Text(
-                      currentUser.email!,
+                      email,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 20),
@@ -116,7 +119,6 @@ class _MyProfilePageState extends State<MyProfilePage> {
               ),
             );
           } else {
-            // Eğer veri yoksa, bir CircularProgressIndicator döndür
             return Center(child: CircularProgressIndicator());
           }
         },

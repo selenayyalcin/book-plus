@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 class AuthService {
   final userCollection = FirebaseFirestore.instance.collection("users");
   final firebaseAuth = FirebaseAuth.instance;
+
   Future<void> signUp(BuildContext context,
       {required String email,
       required String password,
@@ -16,7 +17,8 @@ class AuthService {
       final UserCredential userCredential = await firebaseAuth
           .createUserWithEmailAndPassword(email: email, password: password);
       if (userCredential.user != null) {
-        _registerUser(email: email, password: password);
+        _registerUser(
+            uid: userCredential.user!.uid, email: email, username: username);
         navigator
             .push(MaterialPageRoute(builder: (context) => const HomePage()));
       }
@@ -35,7 +37,6 @@ class AuthService {
         //giriş başarılı
         Fluttertoast.showToast(
             msg: "Successfully logged in.", toastLength: Toast.LENGTH_LONG);
-
         navigator
             .push(MaterialPageRoute(builder: (context) => const HomePage()));
       }
@@ -45,12 +46,12 @@ class AuthService {
   }
 
   Future<void> _registerUser(
-      {required String email, required String password}) async {
-    String username = email.split('@')[0];
-    await userCollection.doc().set({
+      {required String uid,
+      required String email,
+      required String username}) async {
+    await userCollection.doc(uid).set({
       "username": username,
       "email": email,
-      "password": password,
     });
   }
 }
