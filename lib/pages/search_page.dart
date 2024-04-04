@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:book_plus/pages/book_detail_page.dart';
-import 'package:path/path.dart' as Path;
-import 'package:book_plus/database_helper.dart';
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 
 class SearchPage extends StatefulWidget {
@@ -25,15 +23,24 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _loadRecentBooks() async {
-    List<Map<String, dynamic>> recentBooks =
-        await DatabaseHelper.instance.getRecentBooks();
-    setState(() {
-      searchedBooks = recentBooks;
-    });
+    // Firestore'dan son aranan kitapları al
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('recent_books')
+          .get();
+
+      setState(() {
+        searchedBooks = querySnapshot.docs.map((doc) => doc.data()).toList();
+      });
+    }
   }
 
   Future<void> searchBooks(String searchTerm) async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+    // Arama terimini Firestore'da kontrol et
+    final querySnapshot = await FirebaseFirestore.instance
         .collection('books')
         .where('title', isEqualTo: searchTerm)
         .get();
@@ -41,16 +48,15 @@ class _SearchPageState extends State<SearchPage> {
     if (querySnapshot.docs.isEmpty) {
       searchTerm = searchTerm.toLowerCase();
 
-      querySnapshot =
+      // Firestore'dan tüm kitapları al ve arama yap
+      final allBooksSnapshot =
           await FirebaseFirestore.instance.collection('books').get();
 
-      List<QueryDocumentSnapshot> foundBooks = querySnapshot.docs
-          .where((book) =>
-              book['title'].toString().toLowerCase().contains(searchTerm))
-          .toList();
+      final foundBooks = allBooksSnapshot.docs.where((book) =>
+          book['title'].toString().toLowerCase().contains(searchTerm));
 
       if (foundBooks.isNotEmpty) {
-        QueryDocumentSnapshot firstBook = foundBooks.first;
+        final firstBook = foundBooks.first;
 
         Navigator.push(
           context,
@@ -68,22 +74,30 @@ class _SearchPageState extends State<SearchPage> {
           ),
         );
 
-        await DatabaseHelper.instance.insertBook({
-          'title': firstBook['title'],
-          'author': firstBook['author'],
-          'imageLink': firstBook['imageLink'],
-        });
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          // Kullanıcının arama geçmişine ekle
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('recent_books')
+              .add({
+            'title': firstBook['title'],
+            'author': firstBook['author'],
+            'imageLink': firstBook['imageLink'],
+          });
 
-        _loadRecentBooks();
+          _loadRecentBooks();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Book you are looking for haven\'t found.'),
+            content: Text('Aranan kitap bulunamadı.'),
           ),
         );
       }
     } else {
-      QueryDocumentSnapshot firstBook = querySnapshot.docs.first;
+      final firstBook = querySnapshot.docs.first;
       String title = firstBook['title'];
 
       bool isBookInRecent = searchedBooks.any((book) => book['title'] == title);
@@ -97,13 +111,21 @@ class _SearchPageState extends State<SearchPage> {
           });
         });
 
-        await DatabaseHelper.instance.insertBook({
-          'title': title,
-          'author': firstBook['author'],
-          'imageLink': firstBook['imageLink'],
-        });
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          // Kullanıcının arama geçmişine ekle
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .collection('recent_books')
+              .add({
+            'title': title,
+            'author': firstBook['author'],
+            'imageLink': firstBook['imageLink'],
+          });
 
-        _loadRecentBooks();
+          _loadRecentBooks();
+        }
       }
 
       Navigator.push(
@@ -125,8 +147,21 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> clearHistory() async {
-    await DatabaseHelper.instance.clearHistory();
-    _loadRecentBooks();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Kullanıcının arama geçmişini temizle
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('recent_books')
+          .get()
+          .then((querySnapshot) {
+        querySnapshot.docs.forEach((doc) {
+          doc.reference.delete();
+        });
+      });
+      _loadRecentBooks();
+    }
   }
 
   @override
@@ -214,173 +249,191 @@ class _SearchPageState extends State<SearchPage> {
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.all(4.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 200,
-                                    width: 150,
-                                    child: Image.asset(
-                                      searchedBooks[index]['imageLink'],
-                                      fit: BoxFit.cover,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BookDetailPage(
+                                        author: searchedBooks[index]['author'],
+                                        country: searchedBooks[index]
+                                            ['country'],
+                                        imageLink: searchedBooks[index]
+                                            ['imageLink'],
+                                        language: searchedBooks[index]
+                                            ['language'],
+                                        link: searchedBooks[index]['link'],
+                                        pages: searchedBooks[index]['pages'],
+                                        title: searchedBooks[index]['title'],
+                                        year: searchedBooks[index]['year'],
+                                      ),
                                     ),
-                                  ),
-                                  Text(searchedBooks[index]['title']),
-                                ],
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 200,
+                                      width: 150,
+                                      child: Image.asset(
+                                        searchedBooks[index]['imageLink'],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Text(searchedBooks[index]['title']),
+                                  ],
+                                ),
                               ),
                             );
                           },
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'English Books',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(45, 115, 109, 1),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 250,
-                        child: StreamBuilder(
-                          stream: FirebaseFirestore.instance
-                              .collection('books')
-                              .where('language', isEqualTo: 'English')
-                              .snapshots(),
-                          builder: (BuildContext context,
-                              AsyncSnapshot<QuerySnapshot> snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              scrollDirection: Axis.horizontal,
-                              itemCount: snapshot.data!.docs.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                DocumentSnapshot book =
-                                    snapshot.data!.docs[index];
-                                return Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => BookDetailPage(
-                                            author: book['author'],
-                                            country: book['country'],
-                                            imageLink: book['imageLink'],
-                                            language: book['language'],
-                                            link: book['link'],
-                                            pages: book['pages'],
-                                            title: book['title'],
-                                            year: book['year'],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          height: 200,
-                                          width: 150,
-                                          child: Image.asset(
-                                            book['imageLink'],
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Text(
-                                          book['title'],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Old Books',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(45, 115, 109, 1),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 250,
-                        child: StreamBuilder(
-                          stream: FirebaseFirestore.instance
-                              .collection('books')
-                              .where('year', isLessThan: 1900)
-                              .snapshots(),
-                          builder: (BuildContext context,
-                              AsyncSnapshot<QuerySnapshot> snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              scrollDirection: Axis.horizontal,
-                              itemCount: snapshot.data!.docs.length,
-                              itemBuilder: (BuildContext context, int index) {
-                                DocumentSnapshot book =
-                                    snapshot.data!.docs[index];
-                                return Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => BookDetailPage(
-                                            author: book['author'],
-                                            country: book['country'],
-                                            imageLink: book['imageLink'],
-                                            language: book['language'],
-                                            link: book['link'],
-                                            pages: book['pages'],
-                                            title: book['title'],
-                                            year: book['year'],
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          height: 200,
-                                          width: 150,
-                                          child: Image.asset(
-                                            book['imageLink'],
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        Text(
-                                          book['title'],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'English Books',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(45, 115, 109, 1),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 250,
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('books')
+                          .where('language', isEqualTo: 'English')
+                          .snapshots(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            DocumentSnapshot book = snapshot.data!.docs[index];
+                            return Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BookDetailPage(
+                                        author: book['author'],
+                                        country: book['country'],
+                                        imageLink: book['imageLink'],
+                                        language: book['language'],
+                                        link: book['link'],
+                                        pages: book['pages'],
+                                        title: book['title'],
+                                        year: book['year'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 200,
+                                      width: 150,
+                                      child: Image.asset(
+                                        book['imageLink'],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Text(
+                                      book['title'],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Old Books',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(45, 115, 109, 1),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 250,
+                    child: StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('books')
+                          .where('year', isLessThan: 1900)
+                          .snapshots(),
+                      builder: (BuildContext context,
+                          AsyncSnapshot<QuerySnapshot> snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemCount: snapshot.data!.docs.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            DocumentSnapshot book = snapshot.data!.docs[index];
+                            return Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BookDetailPage(
+                                        author: book['author'],
+                                        country: book['country'],
+                                        imageLink: book['imageLink'],
+                                        language: book['language'],
+                                        link: book['link'],
+                                        pages: book['pages'],
+                                        title: book['title'],
+                                        year: book['year'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      height: 200,
+                                      width: 150,
+                                      child: Image.asset(
+                                        book['imageLink'],
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Text(
+                                      book['title'],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -392,4 +445,3 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 }
-//TODO: fix duplicate book problem

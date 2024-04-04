@@ -112,7 +112,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       ? null
                       : () => _addToCollection('read_books', widget.title),
                   style: ElevatedButton.styleFrom(
-                    primary: addedToRead
+                    backgroundColor: addedToRead
                         ? Colors.green
                         : null, // Change color based on the state
                   ),
@@ -132,7 +132,7 @@ class _BookDetailPageState extends State<BookDetailPage> {
                       : () =>
                           _addToCollection('want_to_read_books', widget.title),
                   style: ElevatedButton.styleFrom(
-                    primary: addedToWantToRead
+                    backgroundColor: addedToWantToRead
                         ? Colors.green
                         : null, // Change color based on the state
                   ),
