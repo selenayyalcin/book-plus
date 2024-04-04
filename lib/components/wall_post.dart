@@ -20,6 +20,7 @@ class WallPost extends StatefulWidget {
     required this.postId,
     required this.likes,
     required this.time,
+    required imageUrl,
   });
 
   @override
@@ -297,7 +298,8 @@ class _WallPostState extends State<WallPost> {
                   return Comment(
                     text: commentData["CommentText"],
                     user: commentData["CommentedBy"],
-                    time: formatDate(commentData["CommentTime"]),
+                    time:
+                        formatDate(commentData["CommentTime"], dateFormat: ''),
                   );
                 }).toList(),
               );

@@ -2,7 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-String formatDate(Timestamp timestamp) {
+String formatDate(Timestamp timestamp, {required String dateFormat}) {
   // Timestamp is the object we retrieve from firebase
   // so to display it, lets convert it to a string
 

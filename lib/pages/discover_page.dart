@@ -1,10 +1,11 @@
+import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'book_detail_page.dart';
-import 'package:book_plus/bottom_navigation_bar_controller.dart';
+import 'review_page.dart'; // Import the review page
 
 class DiscoverPage extends StatelessWidget {
-  const DiscoverPage({super.key});
+  const DiscoverPage({Key? key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +47,19 @@ class DiscoverPage extends StatelessWidget {
                     ),
                   );
                 },
+                trailing: IconButton(
+                  icon: Icon(Icons.rate_review),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReviewPage(
+                            book:
+                                book), // Pass the book data to the review page
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

@@ -167,7 +167,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                               shape: StadiumBorder(),
                             ),
                             child: Text(
-                              'Edit Profile',
+                              'Save',
                               style: TextStyle(color: Colors.black),
                             ),
                           ),
