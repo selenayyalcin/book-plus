@@ -23,7 +23,6 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Future<void> _loadRecentBooks() async {
-    // Firestore'dan son aranan kitapları al
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final querySnapshot = await FirebaseFirestore.instance
@@ -38,8 +37,18 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  void updateRecentBooks(String title, {bool isRecent = true}) {
+    setState(() {
+      if (isRecent) {
+        searchedBooks.removeWhere((book) => book['title'] == title);
+        searchedBooks.insert(0, {
+          'title': title,
+        });
+      }
+    });
+  }
+
   Future<void> searchBooks(String searchTerm) async {
-    // Arama terimini Firestore'da kontrol et
     final querySnapshot = await FirebaseFirestore.instance
         .collection('books')
         .where('title', isEqualTo: searchTerm)
@@ -48,7 +57,6 @@ class _SearchPageState extends State<SearchPage> {
     if (querySnapshot.docs.isEmpty) {
       searchTerm = searchTerm.toLowerCase();
 
-      // Firestore'dan tüm kitapları al ve arama yap
       final allBooksSnapshot =
           await FirebaseFirestore.instance.collection('books').get();
 
@@ -76,7 +84,6 @@ class _SearchPageState extends State<SearchPage> {
 
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          // Kullanıcının arama geçmişine ekle
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -87,18 +94,21 @@ class _SearchPageState extends State<SearchPage> {
             'imageLink': firstBook['imageLink'],
           });
 
+          updateRecentBooks(firstBook['title']);
           _loadRecentBooks();
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Aranan kitap bulunamadı.'),
+            content: Text('Book hasn\'t found.'),
           ),
         );
       }
     } else {
       final firstBook = querySnapshot.docs.first;
       String title = firstBook['title'];
+
+      updateRecentBooks(title, isRecent: false);
 
       bool isBookInRecent = searchedBooks.any((book) => book['title'] == title);
 
@@ -113,7 +123,6 @@ class _SearchPageState extends State<SearchPage> {
 
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          // Kullanıcının arama geçmişine ekle
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -124,6 +133,7 @@ class _SearchPageState extends State<SearchPage> {
             'imageLink': firstBook['imageLink'],
           });
 
+          updateRecentBooks(title);
           _loadRecentBooks();
         }
       }
@@ -149,7 +159,6 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> clearHistory() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      // Kullanıcının arama geçmişini temizle
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)

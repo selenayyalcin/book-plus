@@ -109,7 +109,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             builder: (context) => UpdateProfileScreen(),
                           ),
                         ),
-                        child: const Text('Edit Profile'),
+                        child: const Text(
+                          'Edit Profile',
+                          style: TextStyle(color: Colors.black),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
