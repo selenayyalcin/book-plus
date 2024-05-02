@@ -19,8 +19,7 @@ class AuthService {
       if (userCredential.user != null) {
         _registerUser(
             uid: userCredential.user!.uid, email: email, username: username);
-        navigator
-            .push(MaterialPageRoute(builder: (context) => const HomePage()));
+        navigator.push(MaterialPageRoute(builder: (context) => HomePage()));
       }
     } on FirebaseAuthException catch (e) {
       Fluttertoast.showToast(msg: e.message!, toastLength: Toast.LENGTH_LONG);
@@ -37,8 +36,7 @@ class AuthService {
         //giriş başarılı
         Fluttertoast.showToast(
             msg: "Successfully logged in.", toastLength: Toast.LENGTH_LONG);
-        navigator
-            .push(MaterialPageRoute(builder: (context) => const HomePage()));
+        navigator.push(MaterialPageRoute(builder: (context) => HomePage()));
       }
     } on FirebaseAuthException catch (e) {
       Fluttertoast.showToast(msg: e.message!, toastLength: Toast.LENGTH_LONG);

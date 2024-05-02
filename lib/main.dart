@@ -21,13 +21,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
-      home: const HomePage(),
+      home: HomePage(),
       routes: {
         '/welcome': (context) => const WelcomeScreen(),
         '/discover': (context) => const DiscoverPage(),
         '/search': (context) => const SearchPage(),
         '/profile': (context) => const MyProfilePage(),
-        '/home': (context) => const HomePage(),
+        '/home': (context) => HomePage(),
       },
     );
   }

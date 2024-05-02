@@ -7,7 +7,6 @@ import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({Key? key}) : super(key: key);
-
   @override
   _MyProfilePageState createState() => _MyProfilePageState();
 }
@@ -15,7 +14,6 @@ class MyProfilePage extends StatefulWidget {
 class _MyProfilePageState extends State<MyProfilePage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   final usersCollection = FirebaseFirestore.instance.collection('users');
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +32,6 @@ class _MyProfilePageState extends State<MyProfilePage> {
             final userData = snapshot.data!.data() as Map<String, dynamic>;
             final String username = userData['username'];
             final String email = userData['email'];
-
             return SingleChildScrollView(
               child: Container(
                 margin: EdgeInsets.only(top: 50),
@@ -109,10 +106,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             builder: (context) => UpdateProfileScreen(),
                           ),
                         ),
-                        child: const Text(
-                          'Edit Profile',
-                          style: TextStyle(color: Colors.black),
-                        ),
+                        child: const Text('Edit Profile'),
                       ),
                     ),
                     const SizedBox(height: 30),
