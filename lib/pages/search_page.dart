@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:book_plus/pages/book_detail_page.dart';
+import 'package:book_plus/pages/user_detail_page.dart';
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 
 class SearchPage extends StatefulWidget {
@@ -156,6 +157,34 @@ class _SearchPageState extends State<SearchPage> {
     }
   }
 
+  Future<void> searchUsers(String searchTerm) async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isEqualTo: searchTerm)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final user = querySnapshot.docs.first;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserDetailPage(
+            userId: user.id,
+            username: user['username'],
+            email: user['email'],
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not found.'),
+        ),
+      );
+    }
+  }
+
   Future<void> clearHistory() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -202,6 +231,7 @@ class _SearchPageState extends State<SearchPage> {
                 ElevatedButton(
                   onPressed: () {
                     searchBooks(_searchController.text);
+                    searchUsers(_searchController.text);
                   },
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(120, 50),

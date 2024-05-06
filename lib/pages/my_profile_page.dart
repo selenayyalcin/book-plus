@@ -6,7 +6,7 @@ import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
-  const MyProfilePage({Key? key}) : super(key: key);
+  const MyProfilePage({super.key});
   @override
   _MyProfilePageState createState() => _MyProfilePageState();
 }
@@ -14,6 +14,10 @@ class MyProfilePage extends StatefulWidget {
 class _MyProfilePageState extends State<MyProfilePage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   final usersCollection = FirebaseFirestore.instance.collection('users');
+  bool isFollowing = false;
+  int followersCount = 0;
+  int followingCount = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +38,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
             final String email = userData['email'];
             return SingleChildScrollView(
               child: Container(
-                margin: EdgeInsets.only(top: 50),
+                margin: const EdgeInsets.only(top: 50),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -46,7 +50,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           height: 120,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(100),
-                            child: Image(
+                            child: const Image(
                               image: AssetImage(
                                 'assets/images/profile.jpg',
                               ),
@@ -61,14 +65,15 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             height: 35,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(100),
-                              color: Color.fromARGB(255, 149, 180, 178),
+                              color: const Color.fromARGB(255, 149, 180, 178),
                             ),
                             child: IconButton(
                               onPressed: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => UpdateProfileScreen(),
+                                    builder: (context) =>
+                                        const UpdateProfileScreen(),
                                   ),
                                 );
                               },
@@ -92,22 +97,46 @@ class _MyProfilePageState extends State<MyProfilePage> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: 200,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color.fromARGB(255, 158, 213, 209),
-                          side: BorderSide.none,
-                          shape: StadiumBorder(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Column(
+                          children: [
+                            const Text(
+                              'Followers',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              '$followersCount',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => UpdateProfileScreen(),
-                          ),
+                        Column(
+                          children: [
+                            const Text(
+                              'Following',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              '$followingCount',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Text('Edit Profile'),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 30),
                     const Divider(),
@@ -129,7 +158,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
               ),
             );
           } else {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
         },
       ),
@@ -145,7 +174,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
           padding: const EdgeInsets.all(8.0),
           child: Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Color.fromRGBO(45, 115, 109, 1),
@@ -161,11 +190,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
           builder:
               (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
             if (snapshot.hasError) {
-              return Text('Something went wrong');
+              return const Text('Something went wrong');
             }
 
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return CircularProgressIndicator();
+              return const CircularProgressIndicator();
             }
 
             return SizedBox(
@@ -173,8 +202,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: snapshot.data!.docs.map((DocumentSnapshot document) {
-                  Map<String, dynamic> data =
-                      document.data() as Map<String, dynamic>;
+                  String bookImageLink = document['imageLink'];
                   return Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Container(
@@ -186,7 +214,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                             width: 100,
                             height: 150,
                             child: Image.asset(
-                              data['imageLink'],
+                              bookImageLink,
                               fit: BoxFit.cover,
                             ),
                           ),
