@@ -19,6 +19,30 @@ class _MyProfilePageState extends State<MyProfilePage> {
   int followingCount = 0;
 
   @override
+  void initState() {
+    super.initState();
+    updateFollowCounts();
+  }
+
+  Future<void> updateFollowCounts() async {
+    final followersSnapshot = await usersCollection
+        .doc(currentUser.uid)
+        .collection('followers')
+        .get();
+    setState(() {
+      followersCount = followersSnapshot.docs.length;
+    });
+
+    final followingSnapshot = await usersCollection
+        .doc(currentUser.uid)
+        .collection('following')
+        .get();
+    setState(() {
+      followingCount = followingSnapshot.docs.length;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
