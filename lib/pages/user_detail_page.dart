@@ -70,14 +70,51 @@ class UserDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Username: $username',
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Email: $email',
-              style: const TextStyle(fontSize: 18),
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 50,
+                  backgroundImage: AssetImage('assets/images/profile.jpg'),
+                ),
+                const SizedBox(width: 20),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const CircularProgressIndicator();
+                        }
+                        final data =
+                            snapshot.data?.data() as Map<String, dynamic>?;
+                        if (data == null) {
+                          return const Text('User data not found');
+                        }
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              username,
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(height: 10),
+                            const SizedBox(height: 10),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 20),
             StreamBuilder<DocumentSnapshot>(
@@ -92,7 +129,7 @@ class UserDetailPage extends StatelessWidget {
                   return Text('Error: ${snapshot.error}');
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return CircularProgressIndicator();
+                  return const CircularProgressIndicator();
                 }
                 final isFollowing = snapshot.data?.exists ?? false;
                 return ElevatedButton(
