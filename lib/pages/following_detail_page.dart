@@ -1,3 +1,4 @@
+import 'package:book_plus/pages/user_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -38,7 +39,16 @@ class FollowingDetailPage extends StatelessWidget {
               return ListTile(
                 title: Text(followingUsername),
                 onTap: () {
-                  // navigate to the profile of the tapped following
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserDetailPage(
+                        userId: followingId,
+                        username: followingUsername,
+                        email: snapshot.data!.get('email'),
+                      ),
+                    ),
+                  );
                 },
               );
             },

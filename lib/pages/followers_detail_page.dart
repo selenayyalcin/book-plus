@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'user_detail_page.dart';
 
 class FollowerDetailPage extends StatelessWidget {
   final List<String> followers;
@@ -38,7 +39,16 @@ class FollowerDetailPage extends StatelessWidget {
               return ListTile(
                 title: Text(followerUsername),
                 onTap: () {
-                  // navigate to the profile of the tapped follower
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UserDetailPage(
+                        userId: followerId,
+                        username: followerUsername,
+                        email: snapshot.data!.get('email'),
+                      ),
+                    ),
+                  );
                 },
               );
             },
