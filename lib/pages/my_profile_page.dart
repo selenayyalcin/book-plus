@@ -1,4 +1,6 @@
 import 'package:book_plus/pages/update_profile_screen.dart';
+import 'package:book_plus/pages/followers_detail_page.dart';
+import 'package:book_plus/pages/following_detail_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +8,7 @@ import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
-  const MyProfilePage({super.key});
+  const MyProfilePage({Key? key}) : super(key: key);
   @override
   _MyProfilePageState createState() => _MyProfilePageState();
 }
@@ -17,6 +19,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
   bool isFollowing = false;
   int followersCount = 0;
   int followingCount = 0;
+  List<String> followers = [];
+  List<String> followings = [];
 
   @override
   void initState() {
@@ -30,7 +34,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
         .collection('followers')
         .get();
     setState(() {
-      followersCount = followersSnapshot.docs.length;
+      followers = followersSnapshot.docs.map((doc) => doc.id).toList();
+      followersCount = followers.length;
     });
 
     final followingSnapshot = await usersCollection
@@ -38,7 +43,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
         .collection('following')
         .get();
     setState(() {
-      followingCount = followingSnapshot.docs.length;
+      followings = followingSnapshot.docs.map((doc) => doc.id).toList();
+      followingCount = followings.length;
     });
   }
 
@@ -114,51 +120,73 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     const SizedBox(height: 10),
                     Text(
                       username,
-                      style: Theme.of(context).textTheme.headlineSmall,
+                      style: Theme.of(context).textTheme.headline6,
                     ),
                     Text(
                       email,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodyText2,
                     ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        Column(
-                          children: [
-                            const Text(
-                              'Followers',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FollowerDetailPage(followers: followers),
                               ),
-                            ),
-                            Text(
-                              '$followersCount',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Followers',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
+                              Text(
+                                '$followersCount',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        Column(
-                          children: [
-                            const Text(
-                              'Following',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    FollowingDetailPage(followings: followings),
                               ),
-                            ),
-                            Text(
-                              '$followingCount',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Following',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Colors.grey,
+                                ),
                               ),
-                            ),
-                          ],
+                              Text(
+                                '$followingCount',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
