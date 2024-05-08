@@ -13,7 +13,8 @@ class UserDetailPage extends StatelessWidget {
     required this.email,
   });
 
-  void followUser(BuildContext context, String otherUserId) async {
+  void followUser(
+      BuildContext context, String otherUserId, bool isFollowing) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     final CollectionReference followingRef = FirebaseFirestore.instance
         .collection('users')
@@ -25,19 +26,29 @@ class UserDetailPage extends StatelessWidget {
         .collection('followers');
 
     try {
-      await followingRef.doc(otherUserId).set({
-        'userId': otherUserId,
-      });
+      if (isFollowing) {
+        await followingRef.doc(otherUserId).delete();
+        await followersRef.doc(currentUser.uid).delete();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You unfollowed the user.'),
+          ),
+        );
+      } else {
+        await followingRef.doc(otherUserId).set({
+          'userId': otherUserId,
+        });
 
-      await followersRef.doc(currentUser.uid).set({
-        'userId': currentUser.uid,
-      });
+        await followersRef.doc(currentUser.uid).set({
+          'userId': currentUser.uid,
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You followed the user.'),
-        ),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You followed the user.'),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -49,6 +60,7 @@ class UserDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         title: Text(username),
@@ -68,11 +80,28 @@ class UserDetailPage extends StatelessWidget {
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                followUser(context, userId);
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(currentUser!.uid)
+                  .collection('following')
+                  .doc(userId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                }
+                final isFollowing = snapshot.data?.exists ?? false;
+                return ElevatedButton(
+                  onPressed: () {
+                    followUser(context, userId, isFollowing);
+                  },
+                  child: Text(isFollowing ? 'Following' : 'Follow'),
+                );
               },
-              child: const Text('Follow'),
             ),
           ],
         ),
