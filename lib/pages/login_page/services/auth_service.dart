@@ -17,8 +17,14 @@ class AuthService {
       final UserCredential userCredential = await firebaseAuth
           .createUserWithEmailAndPassword(email: email, password: password);
       if (userCredential.user != null) {
+        // Kullanıcıyı oluştururken displayName'i de belirleyin
+        await userCredential.user!.updateDisplayName(username);
+
+        // Kullanıcı bilgilerini Firestore'a kaydedin
         _registerUser(
             uid: userCredential.user!.uid, email: email, username: username);
+
+        // Ana sayfaya yönlendirme yapın
         navigator.push(MaterialPageRoute(builder: (context) => HomePage()));
       }
     } on FirebaseAuthException catch (e) {
