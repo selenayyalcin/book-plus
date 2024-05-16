@@ -1,8 +1,11 @@
-import 'package:book_plus/bottom_navigation_bar_controller.dart';
-import 'package:book_plus/pages/my_profile_page.dart';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
@@ -17,6 +20,27 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  File? _imageFile;
+  late String photoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser!.uid)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        setState(() {
+          photoUrl =
+              (documentSnapshot.data() as Map<String, dynamic>)['photoUrl'] ??
+                  '';
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,48 +49,60 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => MyProfilePage()),
-          ),
+          onPressed: () => Navigator.pop(context),
           icon: const Icon(LineAwesomeIcons.angle_left),
         ),
         title: const Text('Edit Profile'),
         backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
-        actions: [],
       ),
       body: SingleChildScrollView(
         child: Container(
-          margin: EdgeInsets.only(top: 50),
+          margin: const EdgeInsets.only(top: 50),
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             children: [
-              Stack(children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: Image(
-                          image: AssetImage('assets/images/profile.jpg'))),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 35,
-                    height: 35,
-                    decoration: BoxDecoration(
+              Stack(
+                children: [
+                  GestureDetector(
+                    onTap: _selectAndUploadImage,
+                    child: SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(100),
-                        color: Color.fromARGB(255, 149, 180, 178)),
-                    child: const Icon(
-                      LineAwesomeIcons.camera,
-                      color: Color.fromARGB(255, 75, 74, 74),
-                      size: 20,
+                        child: _imageFile != null
+                            ? Image.file(_imageFile!, fit: BoxFit.cover)
+                            : (photoUrl.isNotEmpty
+                                ? Image.asset(photoUrl)
+                                : const Image(
+                                    image:
+                                        AssetImage('assets/images/profile.jpg'),
+                                  )),
+                      ),
                     ),
                   ),
-                )
-              ]),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 35,
+                      height: 35,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        color: const Color.fromARGB(255, 149, 180, 178),
+                      ),
+                      child: IconButton(
+                        onPressed: _selectAndUploadImage,
+                        icon: const Icon(
+                          LineAwesomeIcons.camera,
+                          color: Color.fromARGB(255, 75, 74, 74),
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 50),
               StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
@@ -75,7 +111,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || !snapshot.data!.exists) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   final userData =
@@ -181,8 +217,49 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const BottomNavigationBarController(initialIndex: 3),
     );
+  }
+
+  Future<void> _selectAndUploadImage() async {
+    final pickedFile =
+        await ImagePicker().getImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+      String photoUrl = await uploadImageToFirebase(_imageFile!);
+
+      // Firestore'da kullanıcının belirli bir alanının varlığını kontrol et
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .get();
+      Map<String, dynamic>? userData = snapshot.data() as Map<String, dynamic>?;
+
+      if (userData == null || !userData.containsKey('photoUrl')) {
+        // Eğer alan yoksa, fotoğrafı Firestore'a ekleyin
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .set({'photoUrl': photoUrl}, SetOptions(merge: true));
+      } else {
+        // Eğer alan varsa, fotoğrafı güncelleyin
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .update({'photoUrl': photoUrl});
+      }
+    }
+  }
+
+  Future<String> uploadImageToFirebase(File imageFile) async {
+    String fileName = basename(imageFile.path);
+    Reference firebaseStorageRef =
+        FirebaseStorage.instance.ref().child('profile_photos/$fileName');
+    UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+    TaskSnapshot taskSnapshot = await uploadTask;
+    String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+    return downloadUrl;
   }
 
   void _updateProfile(BuildContext context) async {

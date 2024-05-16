@@ -1,14 +1,20 @@
-import 'package:book_plus/pages/update_profile_screen.dart';
+import 'dart:io';
+
+import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/pages/followers_detail_page.dart';
 import 'package:book_plus/pages/following_detail_page.dart';
+import 'package:book_plus/pages/update_profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:book_plus/bottom_navigation_bar_controller.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
   const MyProfilePage({Key? key}) : super(key: key);
+
   @override
   _MyProfilePageState createState() => _MyProfilePageState();
 }
@@ -21,6 +27,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   int followingCount = 0;
   List<String> followers = [];
   List<String> followings = [];
+  File? _imageFile;
 
   @override
   void initState() {
@@ -48,13 +55,74 @@ class _MyProfilePageState extends State<MyProfilePage> {
     });
   }
 
+  Future<void> _selectAndUploadImage() async {
+    final pickedFile =
+        await ImagePicker().getImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+      String photoUrl = await uploadImageToFirebase(_imageFile!);
+
+      // Firestore'da kullanıcının belirli bir alanının varlığını kontrol et
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(FirebaseAuth.instance.currentUser!.uid)
+          .get();
+      Map<String, dynamic>? userData = snapshot.data() as Map<String, dynamic>?;
+
+      if (userData == null || !userData.containsKey('photoUrl')) {
+        // Eğer alan yoksa, fotoğrafı Firestore'a ekleyin
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .set({'photoUrl': photoUrl}, SetOptions(merge: true));
+      } else {
+        // Eğer alan varsa, fotoğrafı güncelleyin
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser!.uid)
+            .update({'photoUrl': photoUrl});
+      }
+    }
+  }
+
+  Future<String> uploadImageToFirebase(File imageFile) async {
+    String fileName = path.basename(imageFile.path);
+    Reference firebaseStorageRef =
+        FirebaseStorage.instance.ref().child('profile_photos/$fileName');
+
+    // Dosya yolu ve varlığını kontrol et
+    if (!imageFile.existsSync()) {
+      print('Hata: Dosya bulunamadı!');
+      return '';
+    }
+
+    UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
+    TaskSnapshot taskSnapshot = await uploadTask;
+    String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Profile'),
         backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
-        actions: [],
+        actions: [
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UpdateProfileScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
@@ -66,6 +134,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
             final userData = snapshot.data!.data() as Map<String, dynamic>;
             final String username = userData['username'];
             final String email = userData['email'];
+            final String photoUrl = userData['photoUrl'] ?? '';
+
             return SingleChildScrollView(
               child: Container(
                 margin: const EdgeInsets.only(top: 50),
@@ -80,11 +150,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           height: 120,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(100),
-                            child: const Image(
-                              image: AssetImage(
-                                'assets/images/profile.jpg',
-                              ),
-                            ),
+                            child: _imageFile != null
+                                ? Image.file(_imageFile!, fit: BoxFit.cover)
+                                : (photoUrl.isNotEmpty
+                                    ? Image.network(
+                                        photoUrl,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.asset(
+                                        'assets/images/blank-profile-picture.png',
+                                        fit: BoxFit.cover,
+                                      )),
                           ),
                         ),
                         Positioned(
@@ -98,17 +174,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
                               color: const Color.fromARGB(255, 149, 180, 178),
                             ),
                             child: IconButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const UpdateProfileScreen(),
-                                  ),
-                                );
-                              },
+                              onPressed: _selectAndUploadImage,
                               icon: const Icon(
-                                LineAwesomeIcons.alternate_pencil,
+                                LineAwesomeIcons.camera,
                                 color: Color.fromARGB(255, 75, 74, 74),
                                 size: 20,
                               ),
