@@ -83,186 +83,299 @@ class UserDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(username),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 150,
-                    width: 150,
-                    child: StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(userId)
-                          .snapshots(),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 150,
+                      width: 150,
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          }
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          }
+                          final data =
+                              snapshot.data?.data() as Map<String, dynamic>?;
+                          if (data == null) {
+                            return Text('User data not found');
+                          }
+                          final String photoUrl = data['profileImageUrl'] ?? '';
+                          return CircleAvatar(
+                            radius: 75,
+                            backgroundImage: photoUrl.isNotEmpty
+                                ? NetworkImage(photoUrl)
+                                : AssetImage(
+                                        'assets/images/blank-profile-picture.jpg')
+                                    as ImageProvider<Object>?,
+                          );
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      username,
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 5),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FutureBuilder<int>(
+                      future: getFollowerCount(userId),
                       builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return CircularProgressIndicator();
                         }
-                        final data =
-                            snapshot.data?.data() as Map<String, dynamic>?;
-                        if (data == null) {
-                          return Text('User data not found');
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
                         }
-                        final String photoUrl = data['profileImageUrl'] ?? '';
-                        return CircleAvatar(
-                          radius: 75,
-                          backgroundImage: photoUrl.isNotEmpty
-                              ? NetworkImage(photoUrl)
-                              : AssetImage(
-                                      'assets/images/blank-profile-picture.jpg')
-                                  as ImageProvider<Object>?,
-                        );
+                        final followerCount = snapshot.data ?? 0;
+                        return Text('Followers: $followerCount');
                       },
                     ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    username,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 5),
-                ],
+                    SizedBox(width: 20),
+                    FutureBuilder<int>(
+                      future: getFollowingCount(userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator();
+                        }
+                        if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
+                        final followingCount = snapshot.data ?? 0;
+                        return Text('Following: $followingCount');
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              SizedBox(height: 20),
+              Center(
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUser!.uid)
+                      .collection('following')
+                      .doc(userId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    }
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return CircularProgressIndicator();
+                    }
+                    final isFollowing = snapshot.data?.exists ?? false;
+                    return ElevatedButton(
+                      onPressed: () {
+                        followUser(context, userId, isFollowing);
+                      },
+                      child: Text(isFollowing ? 'Following' : 'Follow'),
+                    );
+                  },
+                ),
+              ),
+              SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FutureBuilder<int>(
-                    future: getFollowerCount(userId),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      }
-                      if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      }
-                      final followerCount = snapshot.data ?? 0;
-                      return Text('Followers: $followerCount');
-                    },
-                  ),
-                  SizedBox(width: 20),
-                  FutureBuilder<int>(
-                    future: getFollowingCount(userId),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      }
-                      if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      }
-                      final followingCount = snapshot.data ?? 0;
-                      return Text('Following: $followingCount');
-                    },
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 20),
-            Center(
-              child: StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(currentUser!.uid)
-                    .collection('following')
-                    .doc(userId)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  }
-                  final isFollowing = snapshot.data?.exists ?? false;
-                  return ElevatedButton(
-                    onPressed: () {
-                      followUser(context, userId, isFollowing);
-                    },
-                    child: Text(isFollowing ? 'Following' : 'Follow'),
-                  );
-                },
-              ),
-            ),
-            _buildBookList('read_books', 'Books Read'),
-            _buildBookList('want_to_read_books', 'Books to Read'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBookList(String collectionName, String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection("users")
-              .doc(userId)
-              .collection(collectionName)
-              .snapshots(),
-          builder:
-              (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-            if (snapshot.hasError) {
-              return Text('Something went wrong');
-            }
-
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return CircularProgressIndicator();
-            }
-
-            return SizedBox(
-              height: 170,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: snapshot.data!.docs.map((DocumentSnapshot document) {
-                  String bookImageLink = document['imageLink'];
-                  return Padding(
+                  Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      width: 100,
-                      color: Colors.grey[200],
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            height: 150,
-                            child: Image.asset(
-                              bookImageLink,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ],
+                    child: Text(
+                      'Books Read',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  );
-                }).toList(),
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(userId)
+                        .collection('read_books')
+                        .snapshots(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<QuerySnapshot> snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('Something went wrong');
+                      }
+
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      return SizedBox(
+                        height: 170,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: snapshot.data!.docs
+                              .map((DocumentSnapshot document) {
+                            String bookImageLink = document['imageLink'];
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Container(
+                                width: 100,
+                                color: Colors.grey[200],
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      width: 100,
+                                      height: 150,
+                                      child: Image.asset(
+                                        bookImageLink,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            );
-          },
+              SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      'Books to Read',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection("users")
+                        .doc(userId)
+                        .collection('want_to_read_books')
+                        .snapshots(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<QuerySnapshot> snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('Something went wrong');
+                      }
+
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      return SizedBox(
+                        height: 170,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: snapshot.data!.docs
+                              .map((DocumentSnapshot document) {
+                            String bookImageLink = document['imageLink'];
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Container(
+                                width: 100,
+                                color: Colors.grey[200],
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      width: 100,
+                                      height: 150,
+                                      child: Image.asset(
+                                        bookImageLink,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      'Reviews',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('reviews')
+                        .where('userId', isEqualTo: userId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('Something went wrong');
+                      }
+
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      if (snapshot.data!.docs.isEmpty) {
+                        return Text('No reviews found');
+                      }
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          final review = snapshot.data!.docs[index];
+                          return ListTile(
+                            title: Text(review['bookTitle']),
+                            subtitle: Text(review['review']),
+                            leading: Image.asset(review['bookImage']),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 }
