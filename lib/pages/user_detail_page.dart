@@ -194,9 +194,75 @@ class UserDetailPage extends StatelessWidget {
                 },
               ),
             ),
+            _buildBookList('read_books', 'Books Read'),
+            _buildBookList('want_to_read_books', 'Books to Read'),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBookList(String collectionName, String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection("users")
+              .doc(userId)
+              .collection(collectionName)
+              .snapshots(),
+          builder:
+              (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+            if (snapshot.hasError) {
+              return Text('Something went wrong');
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return CircularProgressIndicator();
+            }
+
+            return SizedBox(
+              height: 170,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: snapshot.data!.docs.map((DocumentSnapshot document) {
+                  String bookImageLink = document['imageLink'];
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      width: 100,
+                      color: Colors.grey[200],
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: 100,
+                            height: 150,
+                            child: Image.asset(
+                              bookImageLink,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
