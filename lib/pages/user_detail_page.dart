@@ -58,6 +58,24 @@ class UserDetailPage extends StatelessWidget {
     }
   }
 
+  Future<int> getFollowerCount(String userId) async {
+    final QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('followers')
+        .get();
+    return snapshot.docs.length;
+  }
+
+  Future<int> getFollowingCount(String userId) async {
+    final QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('following')
+        .get();
+    return snapshot.docs.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -70,18 +88,13 @@ class UserDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage('assets/images/profile.jpg'),
-                ),
-                const SizedBox(width: 20),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 10),
-                    StreamBuilder<DocumentSnapshot>(
+            Center(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 150,
+                    width: 150,
+                    child: StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('users')
                           .doc(userId)
@@ -92,53 +105,94 @@ class UserDetailPage extends StatelessWidget {
                         }
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const CircularProgressIndicator();
+                          return CircularProgressIndicator();
                         }
                         final data =
                             snapshot.data?.data() as Map<String, dynamic>?;
                         if (data == null) {
-                          return const Text('User data not found');
+                          return Text('User data not found');
                         }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              username,
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(height: 10),
-                            const SizedBox(height: 10),
-                          ],
+                        final String photoUrl = data['profileImageUrl'] ?? '';
+                        return CircleAvatar(
+                          radius: 75,
+                          backgroundImage: photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : AssetImage(
+                                      'assets/images/blank-profile-picture.jpg')
+                                  as ImageProvider<Object>?,
                         );
                       },
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    username,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 5),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUser!.uid)
-                  .collection('following')
-                  .doc(userId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                }
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const CircularProgressIndicator();
-                }
-                final isFollowing = snapshot.data?.exists ?? false;
-                return ElevatedButton(
-                  onPressed: () {
-                    followUser(context, userId, isFollowing);
-                  },
-                  child: Text(isFollowing ? 'Following' : 'Follow'),
-                );
-              },
+            SizedBox(height: 20),
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FutureBuilder<int>(
+                    future: getFollowerCount(userId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      }
+                      final followerCount = snapshot.data ?? 0;
+                      return Text('Followers: $followerCount');
+                    },
+                  ),
+                  SizedBox(width: 20),
+                  FutureBuilder<int>(
+                    future: getFollowingCount(userId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      }
+                      final followingCount = snapshot.data ?? 0;
+                      return Text('Following: $followingCount');
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 20),
+            Center(
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(currentUser!.uid)
+                    .collection('following')
+                    .doc(userId)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  }
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  }
+                  final isFollowing = snapshot.data?.exists ?? false;
+                  return ElevatedButton(
+                    onPressed: () {
+                      followUser(context, userId, isFollowing);
+                    },
+                    child: Text(isFollowing ? 'Following' : 'Follow'),
+                  );
+                },
+              ),
             ),
           ],
         ),
