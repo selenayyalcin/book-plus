@@ -27,7 +27,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
   int followingCount = 0;
   List<String> followers = [];
   List<String> followings = [];
-  File? _imageFile;
+  String? _imagePath;
 
   @override
   void initState() {
@@ -55,55 +55,6 @@ class _MyProfilePageState extends State<MyProfilePage> {
     });
   }
 
-  Future<void> _selectAndUploadImage() async {
-    final pickedFile =
-        await ImagePicker().getImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-      String photoUrl = await uploadImageToFirebase(_imageFile!);
-
-      // Firestore'da kullanıcının belirli bir alanının varlığını kontrol et
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser!.uid)
-          .get();
-      Map<String, dynamic>? userData = snapshot.data() as Map<String, dynamic>?;
-
-      if (userData == null || !userData.containsKey('photoUrl')) {
-        // Eğer alan yoksa, fotoğrafı Firestore'a ekleyin
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .set({'photoUrl': photoUrl}, SetOptions(merge: true));
-      } else {
-        // Eğer alan varsa, fotoğrafı güncelleyin
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .update({'photoUrl': photoUrl});
-      }
-    }
-  }
-
-  Future<String> uploadImageToFirebase(File imageFile) async {
-    String fileName = path.basename(imageFile.path);
-    Reference firebaseStorageRef =
-        FirebaseStorage.instance.ref().child('profile_photos/$fileName');
-
-    // Dosya yolu ve varlığını kontrol et
-    if (!imageFile.existsSync()) {
-      print('Hata: Dosya bulunamadı!');
-      return '';
-    }
-
-    UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
-    TaskSnapshot taskSnapshot = await uploadTask;
-    String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-    return downloadUrl;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -124,20 +75,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
           ),
         ],
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection("users")
-            .doc(currentUser.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final userData = snapshot.data!.data() as Map<String, dynamic>;
-            final String username = userData['username'];
-            final String email = userData['email'];
-            final String photoUrl = userData['photoUrl'] ?? '';
+      body: SingleChildScrollView(
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection("users")
+              .doc(currentUser.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final userData = snapshot.data!.data() as Map<String, dynamic>;
+              final String username = userData['username'];
+              final String email = userData['email'];
+              final String? profileImageUrl = userData['profileImageUrl'];
 
-            return SingleChildScrollView(
-              child: Container(
+              return Container(
                 margin: const EdgeInsets.only(top: 50),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -150,17 +101,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
                           height: 120,
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(100),
-                            child: _imageFile != null
-                                ? Image.file(_imageFile!, fit: BoxFit.cover)
-                                : (photoUrl.isNotEmpty
+                            child: _imagePath != null
+                                ? Image.file(
+                                    File(_imagePath!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : profileImageUrl != null
                                     ? Image.network(
-                                        photoUrl,
+                                        profileImageUrl,
                                         fit: BoxFit.cover,
                                       )
                                     : Image.asset(
-                                        'assets/images/blank-profile-picture.png',
+                                        'assets/images/blank-profile-picture.jpg',
                                         fit: BoxFit.cover,
-                                      )),
+                                      ),
                           ),
                         ),
                         Positioned(
@@ -174,7 +128,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                               color: const Color.fromARGB(255, 149, 180, 178),
                             ),
                             child: IconButton(
-                              onPressed: _selectAndUploadImage,
+                              onPressed: _selectImage,
                               icon: const Icon(
                                 LineAwesomeIcons.camera,
                                 color: Color.fromARGB(255, 75, 74, 74),
@@ -275,12 +229,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     ),
                   ],
                 ),
-              ),
-            );
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
       ),
       bottomNavigationBar: const BottomNavigationBarController(initialIndex: 3),
     );
@@ -349,5 +303,43 @@ class _MyProfilePageState extends State<MyProfilePage> {
         ),
       ],
     );
+  }
+
+  Future<void> _selectImage() async {
+    final pickedFile =
+        await ImagePicker().getImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      final File file = File(pickedFile.path);
+      final String fileName = path.basename(file.path);
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('User is not authenticated');
+        return;
+      }
+
+      try {
+        await FirebaseStorage.instance
+            .ref('profile_photos/$fileName')
+            .putFile(file);
+        final String downloadUrl = await FirebaseStorage.instance
+            .ref('profile_photos/$fileName')
+            .getDownloadURL();
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .set({
+          'profileImageUrl': downloadUrl,
+        }, SetOptions(merge: true));
+
+        setState(() {
+          _imagePath = pickedFile.path;
+        });
+      } catch (error) {
+        print('Error uploading profile image: $error');
+      }
+    }
   }
 }
