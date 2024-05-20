@@ -1,11 +1,6 @@
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
@@ -20,8 +15,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  File? _imageFile;
-  late String photoUrl;
 
   @override
   void initState() {
@@ -34,9 +27,9 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         .then((DocumentSnapshot documentSnapshot) {
       if (documentSnapshot.exists) {
         setState(() {
-          photoUrl =
-              (documentSnapshot.data() as Map<String, dynamic>)['photoUrl'] ??
-                  '';
+          final userData = documentSnapshot.data() as Map<String, dynamic>;
+          _usernameController.text = userData['username'] ?? '';
+          _emailController.text = userData['email'] ?? '';
         });
       }
     });
@@ -61,48 +54,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             children: [
-              Stack(
-                children: [
-                  GestureDetector(
-                    onTap: _selectAndUploadImage,
-                    child: SizedBox(
-                      width: 120,
-                      height: 120,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(100),
-                        child: _imageFile != null
-                            ? Image.file(_imageFile!, fit: BoxFit.cover)
-                            : (photoUrl.isNotEmpty
-                                ? Image.asset(photoUrl)
-                                : const Image(
-                                    image:
-                                        AssetImage('assets/images/profile.jpg'),
-                                  )),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 35,
-                      height: 35,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(100),
-                        color: const Color.fromARGB(255, 149, 180, 178),
-                      ),
-                      child: IconButton(
-                        onPressed: _selectAndUploadImage,
-                        icon: const Icon(
-                          LineAwesomeIcons.camera,
-                          color: Color.fromARGB(255, 75, 74, 74),
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 50),
               StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance
@@ -132,18 +83,18 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
                             ),
-                            floatingLabelStyle: TextStyle(
+                            floatingLabelStyle: const TextStyle(
                               color: Color.fromARGB(255, 149, 180, 178),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
-                              borderSide: BorderSide(
+                              borderSide: const BorderSide(
                                 width: 2,
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
                             labelText: 'Full Name',
-                            prefixIcon: Icon(LineAwesomeIcons.user),
+                            prefixIcon: const Icon(LineAwesomeIcons.user),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -153,18 +104,18 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
                             ),
-                            floatingLabelStyle: TextStyle(
+                            floatingLabelStyle: const TextStyle(
                               color: Color.fromARGB(255, 149, 180, 178),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
-                              borderSide: BorderSide(
+                              borderSide: const BorderSide(
                                 width: 2,
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
                             labelText: 'E-mail',
-                            prefixIcon: Icon(LineAwesomeIcons.envelope_1),
+                            prefixIcon: const Icon(LineAwesomeIcons.envelope_1),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -175,18 +126,19 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
                             ),
-                            floatingLabelStyle: TextStyle(
+                            floatingLabelStyle: const TextStyle(
                               color: Color.fromARGB(255, 149, 180, 178),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(100),
-                              borderSide: BorderSide(
+                              borderSide: const BorderSide(
                                 width: 2,
                                 color: Color.fromARGB(255, 44, 96, 92),
                               ),
                             ),
                             labelText: 'Password',
-                            prefixIcon: Icon(LineAwesomeIcons.fingerprint),
+                            prefixIcon:
+                                const Icon(LineAwesomeIcons.fingerprint),
                           ),
                         ),
                         const SizedBox(height: 40),
@@ -198,11 +150,11 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
-                                  Color.fromARGB(255, 185, 214, 212),
+                                  const Color.fromARGB(255, 185, 214, 212),
                               side: BorderSide.none,
-                              shape: StadiumBorder(),
+                              shape: const StadiumBorder(),
                             ),
-                            child: Text(
+                            child: const Text(
                               'Save',
                               style: TextStyle(color: Colors.black),
                             ),
@@ -220,48 +172,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     );
   }
 
-  Future<void> _selectAndUploadImage() async {
-    final pickedFile =
-        await ImagePicker().getImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-      String photoUrl = await uploadImageToFirebase(_imageFile!);
-
-      // Firestore'da kullanıcının belirli bir alanının varlığını kontrol et
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser!.uid)
-          .get();
-      Map<String, dynamic>? userData = snapshot.data() as Map<String, dynamic>?;
-
-      if (userData == null || !userData.containsKey('photoUrl')) {
-        // Eğer alan yoksa, fotoğrafı Firestore'a ekleyin
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .set({'photoUrl': photoUrl}, SetOptions(merge: true));
-      } else {
-        // Eğer alan varsa, fotoğrafı güncelleyin
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(FirebaseAuth.instance.currentUser!.uid)
-            .update({'photoUrl': photoUrl});
-      }
-    }
-  }
-
-  Future<String> uploadImageToFirebase(File imageFile) async {
-    String fileName = basename(imageFile.path);
-    Reference firebaseStorageRef =
-        FirebaseStorage.instance.ref().child('profile_photos/$fileName');
-    UploadTask uploadTask = firebaseStorageRef.putFile(imageFile);
-    TaskSnapshot taskSnapshot = await uploadTask;
-    String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-    return downloadUrl;
-  }
-
   void _updateProfile(BuildContext context) async {
     final String newUsername = _usernameController.text.trim();
     final String newEmail = _emailController.text.trim();
@@ -271,20 +181,16 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
       final currentUser = FirebaseAuth.instance.currentUser;
 
       try {
-        // Update user's email if it has changed
         if (newEmail != currentUser!.email) {
           await currentUser.updateEmail(newEmail);
         }
 
-        // Update user's password if it has changed
         if (newPassword.isNotEmpty) {
           await currentUser.updatePassword(newPassword);
         }
 
-        // Update user's display name (username)
         await currentUser.updateProfile(displayName: newUsername);
 
-        // Update user's data in Firestore
         await FirebaseFirestore.instance
             .collection('users')
             .doc(currentUser.uid)
@@ -293,15 +199,13 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           'email': newEmail,
         });
 
-        // Show success message and navigate back to profile page
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Profile updated successfully.'),
           ),
         );
-        Navigator.pop(context); // Go back to the previous screen
+        Navigator.pop(context);
       } catch (e) {
-        // Show error message if something goes wrong
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('An error occurred: $e'),
@@ -309,9 +213,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         );
       }
     } else {
-      // Show error message if username or email is empty
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Username and email cannot be empty.'),
         ),
       );
