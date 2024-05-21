@@ -1,6 +1,7 @@
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/helper/helper_methods.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class CommentsPage extends StatelessWidget {
@@ -42,8 +43,7 @@ class CommentsPage extends StatelessWidget {
                 } else {
                   final post = snapshot.data!;
                   return SizedBox(
-                    width: double
-                        .infinity, // Kartın genişliği ekran genişliği kadar
+                    width: double.infinity,
                     child: Card(
                       elevation: 2,
                       child: Padding(
@@ -111,8 +111,7 @@ class CommentsPage extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final comment = snapshot.data!.docs[index];
                         return SizedBox(
-                          width: double
-                              .infinity, // Kartın genişliği ekran genişliği kadar
+                          width: double.infinity,
                           child: Card(
                             elevation: 2,
                             child: Padding(
@@ -133,10 +132,44 @@ class CommentsPage extends StatelessWidget {
                                     style: const TextStyle(color: Colors.grey),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    formatDate(comment['timestamp'],
-                                        dateFormat: 'dd/MM/yyyy HH:mm'),
-                                    style: const TextStyle(color: Colors.grey),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        formatDate(comment['timestamp'],
+                                            dateFormat: 'dd/MM/yyyy HH:mm'),
+                                        style:
+                                            const TextStyle(color: Colors.grey),
+                                      ),
+                                      StreamBuilder(
+                                        stream: _getCommentLikesStream(
+                                            comment.reference),
+                                        builder: (context,
+                                            AsyncSnapshot<QuerySnapshot>
+                                                snapshot) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return const CircularProgressIndicator();
+                                          } else {
+                                            bool isLiked =
+                                                snapshot.data!.docs.isNotEmpty;
+
+                                            return IconButton(
+                                              onPressed: () {
+                                                _likeComment(
+                                                    comment.reference, isLiked);
+                                              },
+                                              icon: Icon(
+                                                Icons.thumb_up,
+                                                color:
+                                                    isLiked ? Colors.red : null,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -153,5 +186,28 @@ class CommentsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Stream<QuerySnapshot> _getCommentLikesStream(DocumentReference commentRef) {
+    return commentRef.collection('commentLikes').snapshots();
+  }
+
+  void _likeComment(DocumentReference commentRef, bool isLiked) {
+    final currentUser = FirebaseAuth.instance.currentUser!;
+    CollectionReference userLikesCollection =
+        commentRef.collection('commentLikes');
+
+    if (isLiked) {
+      userLikesCollection
+          .where('userId', isEqualTo: currentUser.uid)
+          .get()
+          .then((querySnapshot) {
+        querySnapshot.docs.forEach((doc) {
+          doc.reference.delete();
+        });
+      });
+    } else {
+      userLikesCollection.add({'userId': currentUser.uid});
+    }
   }
 }
