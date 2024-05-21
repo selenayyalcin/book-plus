@@ -24,60 +24,91 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamed(context, '/welcome');
   }
 
+  Stream<List<String>> getFollowingUserIdsStream() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .collection('following')
+        .snapshots()
+        .map((querySnapshot) {
+      return querySnapshot.docs.map((doc) => doc.id).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Book+'),
-          backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
-          actions: [
-            IconButton(
-              onPressed: signOut,
-              icon: const Icon(Icons.logout),
-            )
+      appBar: AppBar(
+        title: const Text('Book+'),
+        backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
+        actions: [
+          IconButton(
+            onPressed: signOut,
+            icon: const Icon(Icons.logout),
+          )
+        ],
+      ),
+      body: Center(
+        child: Column(
+          children: [
+            Expanded(
+              child: StreamBuilder<List<String>>(
+                stream: getFollowingUserIdsStream(),
+                builder: (context, AsyncSnapshot<List<String>> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                      child: Text('No posts found.'),
+                    );
+                  } else {
+                    List<String> userIds = [currentUser.uid, ...snapshot.data!];
+
+                    return StreamBuilder(
+                      stream: FirebaseFirestore.instance
+                          .collection('reviews')
+                          .where('userId', whereIn: userIds)
+                          .orderBy('timestamp', descending: true)
+                          .snapshots(),
+                      builder: (context,
+                          AsyncSnapshot<QuerySnapshot> reviewSnapshot) {
+                        if (reviewSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else if (!reviewSnapshot.hasData ||
+                            reviewSnapshot.data!.docs.isEmpty) {
+                          return Center(
+                            child: Text('No posts found.'),
+                          );
+                        } else {
+                          return ListView.builder(
+                            itemCount: reviewSnapshot.data!.docs.length,
+                            itemBuilder: (context, index) {
+                              final post = reviewSnapshot.data!.docs[index];
+                              return _buildPostItem(post);
+                            },
+                          );
+                        }
+                      },
+                    );
+                  }
+                },
+              ),
+            ),
+            Text(
+              "Logged in as: ${currentUser.email!}",
+              style: const TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
-        body: Center(
-          child: Column(
-            children: [
-              Expanded(
-                child: StreamBuilder(
-                  stream: FirebaseFirestore.instance
-                      .collection('reviews')
-                      .orderBy('timestamp', descending: true)
-                      .snapshots(),
-                  builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
-                    } else if (!snapshot.hasData ||
-                        snapshot.data!.docs.isEmpty) {
-                      return const Center(
-                        child: Text('No posts found.'),
-                      );
-                    } else {
-                      return ListView.builder(
-                        itemCount: snapshot.data!.docs.length,
-                        itemBuilder: (context, index) {
-                          final post = snapshot.data!.docs[index];
-                          return _buildPostItem(post);
-                        },
-                      );
-                    }
-                  },
-                ),
-              ),
-              Text(
-                "Logged in as: ${currentUser.email!}",
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-        bottomNavigationBar:
-            const BottomNavigationBarController(initialIndex: 0));
+      ),
+      bottomNavigationBar: const BottomNavigationBarController(initialIndex: 0),
+    );
   }
 
   Widget _buildPostItem(DocumentSnapshot post) {
@@ -153,7 +184,6 @@ class _HomePageState extends State<HomePage> {
                       return CircularProgressIndicator();
                     } else {
                       bool isLiked = snapshot.data!.docs.isNotEmpty;
-                      int likeCount = snapshot.data!.docs.length;
 
                       return IconButton(
                         onPressed: () {
