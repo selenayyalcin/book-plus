@@ -12,73 +12,76 @@ class CommentsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Comments'),
+        title: const Text('Comments'),
+        backgroundColor: const Color.fromRGBO(45, 115, 109, 1),
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Post',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             StreamBuilder(
               stream: postRef.snapshots(),
               builder: (context, AsyncSnapshot<DocumentSnapshot> snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
+                  return const Center(
                     child: CircularProgressIndicator(),
                   );
                 } else if (!snapshot.hasData) {
-                  return Center(
+                  return const Center(
                     child: Text('No post data available.'),
                   );
                 } else {
                   final post = snapshot.data!;
-                  return Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            post['bookTitle'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                  return SizedBox(
+                    width: double
+                        .infinity, // Kartın genişliği ekran genişliği kadar
+                    child: Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              post['bookTitle'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'By: ${post['userName']}',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            post['review'],
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            formatDate(post['timestamp'],
-                                dateFormat: 'dd/MM/yyyy HH:mm'),
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            Text(post['review']),
+                            const SizedBox(height: 4),
+                            Text(
+                              'By: ${post['userName']}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formatDate(post['timestamp'],
+                                  dateFormat: 'dd/MM/yyyy HH:mm'),
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 }
               },
             ),
-            Divider(),
-            SizedBox(height: 8),
-            Text(
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
               'Comments',
               style: TextStyle(
                 fontSize: 18,
@@ -95,11 +98,11 @@ class CommentsPage extends StatelessWidget {
                     .snapshots(),
                 builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(
+                    return const Center(
                       child: CircularProgressIndicator(),
                     );
                   } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(
+                    return const Center(
                       child: Text('No comments yet.'),
                     );
                   } else {
@@ -107,14 +110,36 @@ class CommentsPage extends StatelessWidget {
                       itemCount: snapshot.data!.docs.length,
                       itemBuilder: (context, index) {
                         final comment = snapshot.data!.docs[index];
-                        return Card(
-                          elevation: 2,
-                          child: ListTile(
-                            title: Text(comment['comment']),
-                            subtitle: Text('By: ${comment['userId']}'),
-                            trailing: Text(
-                              formatDate(comment['timestamp'],
-                                  dateFormat: 'dd/MM/yyyy HH:mm'),
+                        return SizedBox(
+                          width: double
+                              .infinity, // Kartın genişliği ekran genişliği kadar
+                          child: Card(
+                            elevation: 2,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    comment['comment'],
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'By: ${comment['userName']}',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    formatDate(comment['timestamp'],
+                                        dateFormat: 'dd/MM/yyyy HH:mm'),
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );

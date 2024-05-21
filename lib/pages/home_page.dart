@@ -84,16 +84,17 @@ class _HomePageState extends State<HomePage> {
     return Card(
       margin: const EdgeInsets.all(16),
       child: Container(
-        height: 200, // Post yüksekliği
+        width: double.infinity, // Kartın genişliğini maksimuma çıkar
+        height: 180, // Post yüksekliği
         padding: const EdgeInsets.all(8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Kitap Resmi
             Container(
-              height: 180, // Resim yüksekliği (Post yüksekliğinden 20 eksik)
-              width: 140, // Resim genişliği
-              margin: const EdgeInsets.only(right: 16),
+              height: 160, // Resim yüksekliği (Post yüksekliğinden 20 eksik)
+              width: 120, // Resim genişliği
+              margin: const EdgeInsets.only(right: 8),
               child: _buildBookImage(post['bookImage']),
             ),
             Expanded(
@@ -104,9 +105,12 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     post['userName'],
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      // fontWeight: FontWeight.bold,
+                      fontSize: 15,
                     ),
+                    overflow:
+                        TextOverflow.ellipsis, // Metin sığmazsa "..." ile kes
+                    maxLines: 1, // Metin tek satırda kalsın
                   ),
                   const SizedBox(height: 8),
                   // Kitap Adı
@@ -122,6 +126,9 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     post['review'],
                     style: TextStyle(fontSize: 14),
+                    overflow:
+                        TextOverflow.ellipsis, // Metin sığmazsa "..." ile kes
+                    maxLines: 1, // Metin tek satırda kalsın
                   ),
                   const SizedBox(height: 8),
                   // Tarih
@@ -155,6 +162,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icon(
                           Icons.thumb_up,
                           color: isLiked ? Colors.red : null,
+                          size: 20, // Buton boyutunu küçült
                         ),
                       );
                     }
@@ -165,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () {
                     _showCommentDialog(context, post.reference);
                   },
-                  icon: Icon(Icons.comment),
+                  icon: Icon(Icons.comment, size: 20), // Buton boyutunu küçült
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -269,6 +277,7 @@ class _HomePageState extends State<HomePage> {
 
       commentsCollection.add({
         'userId': currentUser.uid,
+        'userName': currentUser.displayName,
         'comment': commentText,
         'timestamp': Timestamp.now(),
       });
