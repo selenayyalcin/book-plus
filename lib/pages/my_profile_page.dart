@@ -1,15 +1,17 @@
 import 'dart:io';
 
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
+import 'package:book_plus/pages/comments_page.dart';
 import 'package:book_plus/pages/followers_detail_page.dart';
 import 'package:book_plus/pages/following_detail_page.dart';
 import 'package:book_plus/pages/update_profile_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as path;
 import 'package:line_awesome_flutter/line_awesome_flutter.dart';
 
 class MyProfilePage extends StatefulWidget {
@@ -227,6 +229,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
                         ],
                       ),
                     ),
+                    const SizedBox(height: 30),
+                    const Divider(),
+                    const SizedBox(height: 30),
+                    _buildUserReviews(),
                   ],
                 ),
               );
@@ -305,6 +311,149 @@ class _MyProfilePageState extends State<MyProfilePage> {
     );
   }
 
+  Widget _buildUserReviews() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('reviews')
+          .where('userId', isEqualTo: currentUser.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, AsyncSnapshot<QuerySnapshot> reviewSnapshot) {
+        if (reviewSnapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        } else if (!reviewSnapshot.hasData ||
+            reviewSnapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Text('No posts found.'),
+          );
+        } else {
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: reviewSnapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              final post = reviewSnapshot.data!.docs[index];
+              // Sadece ilk öğe için başlık ekle
+              Widget listItem = _buildPostItem(post);
+              if (index == 0) {
+                listItem = Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        'My Reviews',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(45, 115, 109, 1),
+                        ),
+                        textAlign: TextAlign.start, // Başlığı sola yasla
+                      ),
+                    ),
+                    listItem,
+                  ],
+                );
+              }
+              return listItem;
+            },
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildPostItem(DocumentSnapshot post) {
+    return Card(
+      margin: const EdgeInsets.all(4),
+      child: Container(
+        width: double.infinity,
+        height: 170,
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 150,
+              width: 100,
+              margin: const EdgeInsets.only(right: 8),
+              child: _buildBookImage(post['bookImage']),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    post['bookTitle'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    post['review'],
+                    style: TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    DateFormat('dd/MM/yyyy').format(post['timestamp'].toDate()),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    _deletePost(post.reference);
+                  },
+                  icon: Icon(
+                    Icons.delete,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Moved "Show Comments" button here
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CommentsPage(post.reference),
+                      ),
+                    );
+                  },
+                  child: Text('Show Comments'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookImage(String imagePath) {
+    return SizedBox(
+      width: 100,
+      height: 150,
+      child: Image.asset(
+        imagePath,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
   Future<void> _selectImage() async {
     final pickedFile =
         await ImagePicker().getImage(source: ImageSource.gallery);
@@ -341,5 +490,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
         print('Error uploading profile image: $error');
       }
     }
+  }
+
+  void _deletePost(DocumentReference postRef) {
+    postRef.delete().then((value) => print('Post deleted successfully'));
   }
 }
