@@ -335,13 +335,17 @@ class _MyProfilePageState extends State<MyProfilePage> {
             itemCount: reviewSnapshot.data!.docs.length,
             itemBuilder: (context, index) {
               final post = reviewSnapshot.data!.docs[index];
-              // Sadece ilk öğe için başlık ekle
               Widget listItem = _buildPostItem(post);
               if (index == 0) {
                 listItem = Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start, // Başlığı sola yasla
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.only(
+                          left: 8.0,
+                          top: 8.0,
+                          bottom: 8.0), // Sol kenar boşluğu ekle
                       child: Text(
                         'My Reviews',
                         style: const TextStyle(

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 class ReviewPage extends StatefulWidget {
   final DocumentSnapshot book;
@@ -69,23 +71,44 @@ class _ReviewPageState extends State<ReviewPage> {
                   onPressed: () async {
                     User? user = FirebaseAuth.instance.currentUser;
                     if (user != null) {
-                      // Yorumu Firestore'a kaydet
-                      await FirebaseFirestore.instance
-                          .collection('reviews')
-                          .add({
-                        'userId': user.uid, // Kullanıcının UID'si
-                        'userName': user.displayName, // Kullanıcının adı
-                        'bookId': widget
-                            .book.id, // Kitabın Firestore belge kimliği (id)
-                        'bookTitle': widget.book['title'], // Kitabın başlığı
-                        'bookAuthor': widget.book['author'], // Kitabın yazarı
-                        'bookImage': widget.book['imageLink'], // Kitabın resmi
-                        'review':
-                            _reviewController.text, // Kullanıcının incelemesi
-                        'timestamp': Timestamp.now(), // Yorumun tarih ve saati
-                      });
+                      // Kötü sözleri yükle
+                      List<String> badWords = await loadBadWords();
 
-                      Navigator.pop(context); // Önceki sayfaya geri dön
+                      // Kötü sözleri kontrol et
+                      if (_containsBadWords(_reviewController.text, badWords)) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Warning'),
+                            content: Text(
+                                'Your review contains inappropriate language.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        // Yorumu Firestore'a kaydet
+                        await FirebaseFirestore.instance
+                            .collection('reviews')
+                            .add({
+                          'userId': user.uid,
+                          'userName': user.displayName,
+                          'bookId': widget.book.id,
+                          'bookTitle': widget.book['title'],
+                          'bookAuthor': widget.book['author'],
+                          'bookImage': widget.book['imageLink'],
+                          'review': _reviewController.text,
+                          'timestamp': Timestamp.now(),
+                        });
+
+                        Navigator.pop(context);
+                      }
                     } else {
                       // Kullanıcı oturum açmamışsa uyarı göster
                       showDialog(
@@ -119,5 +142,32 @@ class _ReviewPageState extends State<ReviewPage> {
   void dispose() {
     _reviewController.dispose();
     super.dispose();
+  }
+
+  Future<List<String>> loadBadWords() async {
+    // JSON dosyasını yükle
+    String data = await rootBundle.loadString('assets/karaliste.json');
+
+    // JSON'u listeye dönüştür
+    List<dynamic> jsonList = json.decode(data);
+
+    // Listeyi String'e dönüştür
+    List<String> badWords = jsonList.cast<String>();
+
+    return badWords;
+  }
+
+  bool _containsBadWords(String text, List<String> badWords) {
+    // Metni küçük harfe çevir
+    String lowercaseText = text.toLowerCase();
+
+    // Her kötü söz için kontrol et
+    for (String word in badWords) {
+      if (lowercaseText.contains(word)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
