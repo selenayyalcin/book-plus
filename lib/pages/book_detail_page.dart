@@ -109,41 +109,32 @@ class _BookDetailPageState extends State<BookDetailPage> {
               children: [
                 ElevatedButton(
                   onPressed: addedToRead
-                      ? null
+                      ? () => _removeFromCollection('read_books', widget.title)
                       : () => _addToCollection('read_books', widget.title),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: addedToRead
-                        ? Colors.green
-                        : null, // Change color based on the state
+                    backgroundColor: addedToRead ? Colors.red : null,
                   ),
                   child: Text(
-                    addedToRead ? 'Added to Read' : 'What I Read',
+                    addedToRead ? 'Remove from List' : 'What I Read',
                     style: TextStyle(
-                      color: addedToRead
-                          ? Colors.white
-                          : Color.fromRGBO(45, 115, 109, 1),
+                      color: addedToRead ? Colors.white : Colors.black,
                     ),
                   ),
                 ),
                 const SizedBox(width: 20),
                 ElevatedButton(
                   onPressed: addedToWantToRead
-                      ? null
+                      ? () => _removeFromCollection(
+                          'want_to_read_books', widget.title)
                       : () =>
                           _addToCollection('want_to_read_books', widget.title),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: addedToWantToRead
-                        ? Colors.green
-                        : null, // Change color based on the state
+                    backgroundColor: addedToWantToRead ? Colors.red : null,
                   ),
                   child: Text(
-                    addedToWantToRead
-                        ? 'Added to Want to Read'
-                        : 'What I Want to Read',
+                    addedToWantToRead ? 'Remove from List' : 'Want to Read',
                     style: TextStyle(
-                      color: addedToWantToRead
-                          ? Colors.white
-                          : Color.fromRGBO(45, 115, 109, 1),
+                      color: addedToWantToRead ? Colors.white : Colors.black,
                     ),
                   ),
                 ),
@@ -174,6 +165,22 @@ class _BookDetailPageState extends State<BookDetailPage> {
           addedToRead = true;
         } else {
           addedToWantToRead = true;
+        }
+      });
+    });
+  }
+
+  void _removeFromCollection(String collectionName, String bookTitle) {
+    CollectionReference collection = FirebaseFirestore.instance
+        .collection('users')
+        .doc(_user!.uid)
+        .collection(collectionName);
+    collection.doc(bookTitle).delete().then((value) {
+      setState(() {
+        if (collectionName == 'read_books') {
+          addedToRead = false;
+        } else {
+          addedToWantToRead = false;
         }
       });
     });
