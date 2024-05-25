@@ -1,6 +1,7 @@
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/helper/helper_methods.dart';
 import 'package:book_plus/pages/comments_page.dart';
+import 'package:book_plus/pages/user_detail_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -209,16 +210,30 @@ class _HomePageState extends State<HomePage> {
                           var user = userSnapshot.data!;
                           return Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: [
-                                CircleAvatar(
-                                  radius: 40,
-                                  backgroundImage:
-                                      NetworkImage(user['profileImageUrl']),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(user['username']),
-                              ],
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UserDetailPage(
+                                      userId: userId,
+                                      username: user['username'],
+                                      email: user['email'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 40,
+                                    backgroundImage:
+                                        NetworkImage(user['profileImageUrl']),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(user['username']),
+                                ],
+                              ),
                             ),
                           );
                         }
