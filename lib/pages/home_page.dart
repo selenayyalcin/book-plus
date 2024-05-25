@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/helper/helper_methods.dart';
 import 'package:book_plus/pages/comments_page.dart';
@@ -6,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 // ignore: unused_import
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:flutter/services.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key});
@@ -297,22 +300,75 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _submitComment(DocumentReference postRef) {
+  void _submitComment(DocumentReference postRef) async {
     String commentText = _commentController.text.trim();
     if (commentText.isNotEmpty) {
-      CollectionReference commentsCollection = FirebaseFirestore.instance
-          .collection('reviews')
-          .doc(postRef.id)
-          .collection('comments'); // 'comments' koleksiyonu olarak ayarlanacak
+      // Kötü sözleri yükle
+      List<String> badWords = await loadBadWords();
 
-      commentsCollection.add({
-        'userId': currentUser.uid,
-        'userName': currentUser.displayName,
-        'comment': commentText,
-        'timestamp': Timestamp.now(),
-      });
+      // Kötü sözleri kontrol et
+      if (_containsBadWords(commentText, badWords)) {
+        // Kötü söz içeren yorum için uyarı göster
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Warning'),
+            content: Text('Your comment contains inappropriate language.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // Yorumu Firestore'a kaydet
+        CollectionReference commentsCollection = FirebaseFirestore.instance
+            .collection('reviews')
+            .doc(postRef.id)
+            .collection(
+                'comments'); // 'comments' koleksiyonu olarak ayarlanacak
 
+        commentsCollection.add({
+          'userId': currentUser.uid,
+          'userName': currentUser.displayName,
+          'comment': commentText,
+          'timestamp': Timestamp.now(),
+        });
+
+        _commentController.clear();
+      }
       _commentController.clear();
     }
+  }
+
+  Future<List<String>> loadBadWords() async {
+    // JSON dosyasını yükle
+    String data = await rootBundle.loadString('assets/karaliste.json');
+
+    // JSON'u listeye dönüştür
+    List<dynamic> jsonList = json.decode(data);
+
+    // Listeyi String'e dönüştür
+    List<String> badWords = jsonList.cast<String>();
+
+    return badWords;
+  }
+
+  bool _containsBadWords(String text, List<String> badWords) {
+    // Metni küçük harfe çevir
+    String lowercaseText = text.toLowerCase();
+
+    // Her kötü söz için kontrol et
+    for (String word in badWords) {
+      if (lowercaseText.contains(word)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }
