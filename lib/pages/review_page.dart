@@ -106,9 +106,10 @@ class _ReviewPageState extends State<ReviewPage> {
                           'review': _reviewController.text,
                           'timestamp': Timestamp.now(),
                         });
-
+                        _reviewController.clear();
                         Navigator.pop(context);
                       }
+                      _reviewController.clear();
                     } else {
                       // Kullanıcı oturum açmamışsa uyarı göster
                       showDialog(
