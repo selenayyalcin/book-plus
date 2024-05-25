@@ -1,14 +1,12 @@
-import 'dart:convert';
-
 import 'package:book_plus/bottom_navigation_bar_controller.dart';
 import 'package:book_plus/helper/helper_methods.dart';
 import 'package:book_plus/pages/comments_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// ignore: unused_import
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/services.dart';
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key});
@@ -21,6 +19,13 @@ class _HomePageState extends State<HomePage> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   final String likesCollection = 'likes';
   TextEditingController _commentController = TextEditingController();
+  List<String> recommendedUserIds = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecommendations();
+  }
 
   void signOut() {
     FirebaseAuth.instance.signOut();
@@ -35,6 +40,40 @@ class _HomePageState extends State<HomePage> {
         .snapshots()
         .map((querySnapshot) {
       return querySnapshot.docs.map((doc) => doc.id).toList();
+    });
+  }
+
+  Future<List<String>> getUserFollowing(String userId) async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('following')
+        .get();
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  Future<List<String>> getMutualFollowings(
+      String userId, List<String> followingIds) async {
+    Set<String> mutualFollowings = {};
+
+    for (String followingId in followingIds) {
+      List<String> theirFollowings = await getUserFollowing(followingId);
+      mutualFollowings.addAll(theirFollowings);
+    }
+
+    // Mevcut kullanıcının zaten takip ettiği kullanıcıları ve kendisini çıkar
+    mutualFollowings.remove(userId);
+    mutualFollowings.removeAll(followingIds);
+
+    return mutualFollowings.toList();
+  }
+
+  void _loadRecommendations() async {
+    List<String> followingIds = await getFollowingUserIdsStream().first;
+    List<String> recommendations =
+        await getMutualFollowings(currentUser.uid, followingIds);
+    setState(() {
+      recommendedUserIds = recommendations;
     });
   }
 
@@ -89,9 +128,16 @@ class _HomePageState extends State<HomePage> {
                           );
                         } else {
                           return ListView.builder(
-                            itemCount: reviewSnapshot.data!.docs.length,
+                            itemCount: reviewSnapshot.data!.docs.length +
+                                (recommendedUserIds.isNotEmpty ? 1 : 0),
                             itemBuilder: (context, index) {
-                              final post = reviewSnapshot.data!.docs[index];
+                              if (recommendedUserIds.isNotEmpty && index == 0) {
+                                return _buildRecommendationsSection();
+                              }
+                              final postIndex = recommendedUserIds.isNotEmpty
+                                  ? index - 1
+                                  : index;
+                              final post = reviewSnapshot.data!.docs[postIndex];
                               return _buildPostItem(post);
                             },
                           );
@@ -114,20 +160,93 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildRecommendationsSection() {
+    return FutureBuilder<List<String>>(
+      future: getFollowingUserIdsStream().first.then(
+          (followingIds) => getMutualFollowings(currentUser.uid, followingIds)),
+      builder: (context, AsyncSnapshot<List<String>> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: Text('No recommendations found.'),
+          );
+        } else {
+          List<String> recommendedUserIds = snapshot.data!;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  'Recommended Profiles',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(
+                height: 140,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: recommendedUserIds.length,
+                  itemBuilder: (context, index) {
+                    String userId = recommendedUserIds[index];
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .get(),
+                      builder: (context, userSnapshot) {
+                        if (!userSnapshot.hasData) {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        } else {
+                          var user = userSnapshot.data!;
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 40,
+                                  backgroundImage:
+                                      NetworkImage(user['profileImageUrl']),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(user['username']),
+                              ],
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
   Widget _buildPostItem(DocumentSnapshot post) {
     return Card(
       margin: const EdgeInsets.all(16),
       child: Container(
-        width: double.infinity, // Kartın genişliğini maksimuma çıkar
-        height: 180, // Post yüksekliği
+        width: double.infinity,
+        height: 180,
         padding: const EdgeInsets.all(8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Kitap Resmi
             Container(
-              height: 160, // Resim yüksekliği (Post yüksekliğinden 20 eksik)
-              width: 120, // Resim genişliği
+              height: 160,
+              width: 120,
               margin: const EdgeInsets.only(right: 8),
               child: _buildBookImage(post['bookImage']),
             ),
@@ -135,19 +254,15 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Username
                   Text(
                     post['userName'],
                     style: TextStyle(
-                      // fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
-                    overflow:
-                        TextOverflow.ellipsis, // Metin sığmazsa "..." ile kes
-                    maxLines: 1, // Metin tek satırda kalsın
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 8),
-                  // Kitap Adı
                   Text(
                     post['bookTitle'],
                     style: TextStyle(
@@ -156,16 +271,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Kitap Yorumu
                   Text(
                     post['review'],
                     style: TextStyle(fontSize: 14),
-                    overflow:
-                        TextOverflow.ellipsis, // Metin sığmazsa "..." ile kes
-                    maxLines: 1, // Metin tek satırda kalsın
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 8),
-                  // Tarih
                   Text(
                     formatDate(post['timestamp'],
                         dateFormat: 'dd/MM/yyyy HH:mm'),
@@ -195,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                         icon: Icon(
                           Icons.thumb_up,
                           color: isLiked ? Colors.red : null,
-                          size: 20, // Buton boyutunu küçült
+                          size: 20,
                         ),
                       );
                     }
@@ -206,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                   onPressed: () {
                     _showCommentDialog(context, post.reference);
                   },
-                  icon: Icon(Icons.comment, size: 20), // Buton boyutunu küçült
+                  icon: Icon(Icons.comment, size: 20),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
@@ -230,13 +342,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildBookImage(String imagePath) {
     return SizedBox(
-      width: 100, // Resmin genişliği
-      height: 150, // Resmin yüksekliği
+      width: 100,
+      height: 150,
       child: Image.asset(
         imagePath,
-        width: 100, // Resmin genişliği
-        height: 150, // Resmin yüksekliği
-        fit: BoxFit.contain, // Resmin boyutunu ayarlamak için kullanılabilir
+        width: 100,
+        height: 150,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -303,12 +415,9 @@ class _HomePageState extends State<HomePage> {
   void _submitComment(DocumentReference postRef) async {
     String commentText = _commentController.text.trim();
     if (commentText.isNotEmpty) {
-      // Kötü sözleri yükle
       List<String> badWords = await loadBadWords();
 
-      // Kötü sözleri kontrol et
       if (_containsBadWords(commentText, badWords)) {
-        // Kötü söz içeren yorum için uyarı göster
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -325,12 +434,10 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       } else {
-        // Yorumu Firestore'a kaydet
         CollectionReference commentsCollection = FirebaseFirestore.instance
             .collection('reviews')
             .doc(postRef.id)
-            .collection(
-                'comments'); // 'comments' koleksiyonu olarak ayarlanacak
+            .collection('comments');
 
         commentsCollection.add({
           'userId': currentUser.uid,
@@ -346,29 +453,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<List<String>> loadBadWords() async {
-    // JSON dosyasını yükle
     String data = await rootBundle.loadString('assets/karaliste.json');
-
-    // JSON'u listeye dönüştür
     List<dynamic> jsonList = json.decode(data);
-
-    // Listeyi String'e dönüştür
     List<String> badWords = jsonList.cast<String>();
-
     return badWords;
   }
 
   bool _containsBadWords(String text, List<String> badWords) {
-    // Metni küçük harfe çevir
     String lowercaseText = text.toLowerCase();
-
-    // Her kötü söz için kontrol et
     for (String word in badWords) {
       if (lowercaseText.contains(word)) {
         return true;
       }
     }
-
     return false;
   }
 }
